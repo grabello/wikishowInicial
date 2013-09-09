@@ -51,6 +51,7 @@ public class DefaultController {
         if (token == null) {
             token = "Sem token";
         }
+        System.out.println("LOGANDO com token=" + token);
         map.addAttribute("json", token);
         return "login";
     }
