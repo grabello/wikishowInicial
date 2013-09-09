@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -30,7 +29,7 @@
     <div class="container">
 
       <form class="form-signin">
-        <h2 class="form-signin-heading">${hello} - Please sign in</h2>
+        <h2 class="form-signin-heading">Please sign in</h2>
         <input type="text" class="form-control" placeholder="Email address" autofocus>
         <input type="password" class="form-control" placeholder="Password">
         <label class="checkbox">
@@ -44,23 +43,29 @@
             data-clientid="950592796361.apps.googleusercontent.com"
             data-cookiepolicy="single_host_origin"
             data-requestvisibleactions="http://schemas.google.com/AddActivity"
-            data-scope="https://www.googleapis.com/auth/plus.login https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile">
+            data-scope="https://www.googleapis.com/auth/plus.login https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/calendar">
           </span>
         </span>
 
       </form>
 
+      <p>Click below button to redirect the result to new page</p>
+      <form method="GET" action="redirect">
+      <table>
+          <tr>
+          <td>
+          <input type="submit" value="Redirect Page"/>
+          </td>
+          </tr>
+      </table>
+      </form>
+
     </div> <!-- /container -->
-
-
-
-
 
         <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
         <script src="//code.jquery.com/jquery.js"></script>
         <!-- Include all compiled plugins (below), or include individual files as needed -->
         <script src="<%=request.getContextPath() %>/resources/js/bootstrap.min.js"></script>
-        <script src="<%=request.getContextPath() %>/resources/js/signin.js"></script>
             <!-- Place this asynchronous JavaScript just before your </body> tag -->
             <script type="text/javascript">
               (function() {
@@ -68,6 +73,23 @@
                po.src = 'https://apis.google.com/js/client:plusone.js';
                var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
              })();
+                     function signinCallback(authResult) {
+                       if (authResult['access_token']) {
+                         // Successfully authorized
+                         // Hide the sign-in button now that the user is authorized, for example:
+                         document.getElementById('signinButton').setAttribute('style', 'display: none');
+                         //window.location.href="https://www.googleapis.com/oauth2/v1/userinfo?alt=json&access_token="+authResult['access_token'];
+
+                         window.location.href="http://localhost:8080/wikishow/login?token="authResult['access_token'];
+                         //response.setAttribute('accessToken',authResult['access_token']);
+                       } else if (authResult['error']) {
+                         // There was an error.
+                         // Possible error codes:
+                         //   "access_denied" - User denied access to your app
+                         //   "immediate_failed" - Could not automatically log in the user
+                         // console.log('There was an error: ' + authResult['error']);
+                       }
+                     }
             </script>
 
   </body>
