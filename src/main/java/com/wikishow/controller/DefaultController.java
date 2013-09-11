@@ -26,24 +26,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 @Controller
 public class DefaultController {
 
-//    @RequestMapping(value = "/")
-//    public String home() {
-//        System.out.println("DefaultController: Passing through...");
-//        return "index";
-//    }
-
-    @RequestMapping(value = "/compare", method = RequestMethod.GET)
-    public String compare(@RequestParam("input1") String input1,
-                          @RequestParam("input2") String input2, Model model) {
-
-        return "loggedin";
-    }
-
-
-    @RequestMapping(value = "/redirect", method = RequestMethod.GET)
-    public String redirect() {
-
-        return "redirect:login";
+    @RequestMapping(value = "/")
+    public String home() {
+        System.out.println("DefaultController: Passing through...");
+        return "index";
     }
 
     @RequestMapping(value="/login", method= RequestMethod.GET)

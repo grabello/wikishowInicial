@@ -53,7 +53,7 @@ public class GoogleLoginController {
 
 
 
-    @RequestMapping(value = "/")
+/*    @RequestMapping(value = "/")
     public String startSignin(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         // Getting the current user
         // This is using App Engine's User Service but you should replace this to
@@ -80,7 +80,7 @@ public class GoogleLoginController {
             return "index";
         }
         return "index";
-    }
+    }*/
 
     @RequestMapping(value = "google-callback")
     public String callBack(HttpServletRequest req, HttpServletResponse resp) throws IOException {
