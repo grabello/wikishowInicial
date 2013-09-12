@@ -5,6 +5,8 @@ import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.appengine.api.users.User;
 import com.google.api.services.plus.model.Person;
 import com.wikishow.vo.OAuthProperties;
+import org.json.JSONObject;
+import org.json.JSONException;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 
@@ -18,7 +20,9 @@ import com.google.appengine.api.users.UserServiceFactory;
 import com.google.api.client.json.jackson.JacksonFactory;
 import com.google.api.client.googleapis.auth.oauth2.draft10.GoogleAccessTokenRequest.GoogleAuthorizationCodeGrant;
 
-import java.io.IOException;
+import java.io.*;
+import java.net.URL;
+import java.nio.charset.Charset;
 
 
 /**
@@ -53,19 +57,19 @@ public class GoogleLoginController {
 
 
 
-/*    @RequestMapping(value = "/")
+    @RequestMapping(value = "/google-signin")
     public String startSignin(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         // Getting the current user
         // This is using App Engine's User Service but you should replace this to
         // your own user/login implementation
-        UserService userService = UserServiceFactory.getUserService();
-        User user = userService.getCurrentUser();
+        UserService userService = null;//= UserServiceFactory.getUserService();
+        User user = null;//userService.getCurrentUser();
 
         // If the user is not logged-in it is redirected to the login service, then back to this page
-        if (user == null) {
-            resp.sendRedirect(userService.createLoginURL(getFullRequestUrl(req)));
-            return "index";
-        }
+//        if (user == null) {
+//            resp.sendRedirect(userService.createLoginURL(getFullRequestUrl(req)));
+//            return "index";
+//        }
 
         // Checking if we already have tokens for this user in store
         AccessTokenResponse accessTokenResponse = null;//oauthTokenDao.getKeys(user.getEmail());
@@ -80,9 +84,9 @@ public class GoogleLoginController {
             return "index";
         }
         return "index";
-    }*/
+    }
 
-    @RequestMapping(value = "google-callback")
+    @RequestMapping(value = "/google-callback")
     public String callBack(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         // Getting the "error" URL parameter
         String[] error = req.getParameterValues(ERROR_URL_PARAM_NAME);
@@ -107,19 +111,26 @@ public class GoogleLoginController {
         // Exchange the code for OAuth tokens
         AccessTokenResponse accessTokenResponse = exchangeCodeForAccessAndRefreshTokens(code[0],
                 requestUrl);
-        System.out.println();
+
+        JSONObject jsonObject = readJsonFromUrl("https://www.googleapis.com/oauth2/v1/userinfo?alt=json&access_token="+ accessTokenResponse.accessToken);
+        req.setAttribute("json", jsonObject.toString());
+        req.setAttribute("code", code[0]);
+
+        for (int i = 0; i < code.length; i++) {
+            System.out.println("***************" + i + " = " + code[i]);
+        }
 
         // Getting the current user
         // This is using App Engine's User Service but you should replace this to
         // your own user/login implementation
-        UserService userService = UserServiceFactory.getUserService();
-        String email = userService.getCurrentUser().getEmail();
+//        UserService userService = UserServiceFactory.getUserService();
+//        String email = userService.getCurrentUser().getEmail();
 
         // Save the tokens
         //oauthTokenDao.saveKeys(accessTokenResponse, email);
         Person person = new Person();
 
-        resp.sendRedirect(REDIRECT_URL);
+        //resp.sendRedirect(REDIRECT_URL);
 
 
         return "loggedin";
@@ -182,6 +193,31 @@ public class GoogleLoginController {
         String queryString = (req.getQueryString() == null) ? "" : "?" + req.getQueryString();
         return scheme + serverName + serverPort + contextPath + servletPath + pathInfo + queryString;
     }
+
+    public static JSONObject readJsonFromUrl(String url) throws IOException {
+        InputStream is = new URL(url).openStream();
+        try {
+            BufferedReader rd = new BufferedReader(new InputStreamReader(is, Charset.forName("UTF-8")));
+            String jsonText = readAll(rd);
+            JSONObject json = new JSONObject(jsonText);
+            return json;
+        } catch (JSONException e) {
+            System.out.println("***********ERRO**********");
+            return null;
+        } finally {
+            is.close();
+        }
+    }
+
+    private static String readAll(Reader rd) throws IOException {
+        StringBuilder sb = new StringBuilder();
+        int cp;
+        while ((cp = rd.read()) != -1) {
+            sb.append((char) cp);
+        }
+        return sb.toString();
+    }
+
 }
 
 

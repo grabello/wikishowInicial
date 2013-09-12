@@ -120,6 +120,13 @@
       </dependency>
 
       <dependency>
+          <groupId>org.json</groupId>
+          <artifactId>json</artifactId>
+          <version>20070829</version>
+      </dependency>
+
+
+      <dependency>
           <groupId>com.google.http-client</groupId>
           <artifactId>google-http-client-jackson2</artifactId>
           <version>1.16.0-rc</version>

@@ -4,21 +4,18 @@
  */
 package com.wikishow.controller;
 
+import com.google.api.client.http.HttpResponse;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
-import java.util.Comparator;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
+
+import java.util.Enumeration;
 
 /**
  * Handles requests for the application home page.
@@ -27,12 +24,12 @@ import org.springframework.web.bind.annotation.RequestParam;
 public class DefaultController {
 
     @RequestMapping(value = "/")
-    public String home() {
+    public String home(HttpServletRequest request, HttpServletResponse response) {
         System.out.println("DefaultController: Passing through...");
         return "index";
     }
 
-    @RequestMapping(value="/login", method= RequestMethod.GET)
+    @RequestMapping(value = "/login", method = RequestMethod.GET)
     public String login(@RequestParam("token") String token, ModelMap map) {
         if (token == null) {
             token = "Sem token";

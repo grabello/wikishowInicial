@@ -7,7 +7,7 @@
     <meta name="author" content="">
     <link rel="shortcut icon" href="../../assets/ico/favicon.png">
 
-    <title>Signin Template for Bootstrap</title>
+    <title>WikiShow</title>
 
     <h2>${msg}</h2>
     <!-- Bootstrap core CSS -->
@@ -36,40 +36,21 @@
           <input type="checkbox" value="remember-me"> Remember me
         </label>
         <button class="btn btn-lg btn-primary btn-block" type="submit">Sign in</button>
-
       </form>
 
-      <p>Click below button to redirect the result to new page</p>
-      <form method="GET" action="redirect">
-      <table>
-          <tr>
-          <td>
-          <input type="submit" value="Redirect Page"/>
-          </td>
-          </tr>
-      </table>
-      </form>
+      <span id="signinButton">
+          <span
+            class="g-signin"
+
+            data-clientid="950592796361.apps.googleusercontent.com"
+            data-cookiepolicy="single_host_origin"
+            data-requestvisibleactions="http://schemas.google.com/AddActivity"
+            data-scope="https://www.googleapis.com/auth/plus.login https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/calendar">
+          </span>
+      </span>
+
 
     </div> <!-- /container -->
-    <script type="text/javascript">
-        function signinCallback(authResult) {
-          if (authResult['access_token']) {
-            // Successfully authorized
-            // Hide the sign-in button now that the user is authorized, for example:
-            //document.getElementById('signinButton').setAttribute('style', 'display: none');
-            //window.location.href="https://www.googleapis.com/oauth2/v1/userinfo?alt=json&access_token="+authResult['access_token'];
-
-            window.location.href="http://http://wikishow.herokuapp.com/login?token="authResult['access_token'];
-            //response.setAttribute('accessToken',authResult['access_token']);
-          } else if (authResult['error']) {
-            // There was an error.
-            // Possible error codes:
-            //   "access_denied" - User denied access to your app
-            //   "immediate_failed" - Could not automatically log in the user
-            // console.log('There was an error: ' + authResult['error']);
-          }
-        }
-    </script>
 
         <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
         <script src="//code.jquery.com/jquery.js"></script>
