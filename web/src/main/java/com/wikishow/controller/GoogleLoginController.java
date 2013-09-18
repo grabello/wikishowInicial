@@ -5,24 +5,23 @@ import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.appengine.api.users.User;
 import com.google.api.services.plus.model.Person;
 import com.wikishow.vo.OAuthProperties;
+import com.wikishow.helper.LoginHelper;
 import org.json.JSONObject;
 import org.json.JSONException;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 
+import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import com.google.api.client.auth.oauth2.draft10.AccessTokenResponse;
 import com.google.api.client.googleapis.auth.oauth2.draft10.GoogleAuthorizationRequestUrl;
 import com.google.appengine.api.users.UserService;
-import com.google.appengine.api.users.UserServiceFactory;
 import com.google.api.client.json.jackson.JacksonFactory;
 import com.google.api.client.googleapis.auth.oauth2.draft10.GoogleAccessTokenRequest.GoogleAuthorizationCodeGrant;
 
 import java.io.*;
-import java.net.URL;
-import java.nio.charset.Charset;
 
 
 /**
@@ -111,10 +110,18 @@ public class GoogleLoginController {
         // Exchange the code for OAuth tokens
         AccessTokenResponse accessTokenResponse = exchangeCodeForAccessAndRefreshTokens(code[0],
                 requestUrl);
+        System.out.println("refreshToken = " + accessTokenResponse.refreshToken);
 
-        JSONObject jsonObject = readJsonFromUrl("https://www.googleapis.com/oauth2/v1/userinfo?alt=json&access_token="+ accessTokenResponse.accessToken);
+        JSONObject jsonObject = LoginHelper.readJsonFromUrl("https://www.googleapis.com/oauth2/v1/userinfo?alt=json&access_token="+ accessTokenResponse.accessToken);
         req.setAttribute("json", jsonObject.toString());
         req.setAttribute("code", code[0]);
+
+        try {
+            Cookie wikiCookie = new Cookie("com/wikishow", jsonObject.getString("email"));
+            resp.addCookie(wikiCookie);
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
 
         for (int i = 0; i < code.length; i++) {
             System.out.println("***************" + i + " = " + code[i]);
@@ -194,29 +201,7 @@ public class GoogleLoginController {
         return scheme + serverName + serverPort + contextPath + servletPath + pathInfo + queryString;
     }
 
-    public static JSONObject readJsonFromUrl(String url) throws IOException {
-        InputStream is = new URL(url).openStream();
-        try {
-            BufferedReader rd = new BufferedReader(new InputStreamReader(is, Charset.forName("UTF-8")));
-            String jsonText = readAll(rd);
-            JSONObject json = new JSONObject(jsonText);
-            return json;
-        } catch (JSONException e) {
-            System.out.println("***********ERRO**********");
-            return null;
-        } finally {
-            is.close();
-        }
-    }
 
-    private static String readAll(Reader rd) throws IOException {
-        StringBuilder sb = new StringBuilder();
-        int cp;
-        while ((cp = rd.read()) != -1) {
-            sb.append((char) cp);
-        }
-        return sb.toString();
-    }
 
 }
 

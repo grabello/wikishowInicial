@@ -28,7 +28,7 @@
 
     <div class="container" >
 
-      <form class="form-signin" action="google-signin">
+      <form class="form-signin" action="facebook-signin">
         <h2 class="form-signin-heading">Please sign in</h2>
         <input type="text" class="form-control" placeholder="Email address" autofocus>
         <input type="password" class="form-control" placeholder="Password">

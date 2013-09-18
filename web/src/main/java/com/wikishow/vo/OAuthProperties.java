@@ -2,7 +2,6 @@ package com.wikishow.vo;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Properties;
 
 /**
  *
