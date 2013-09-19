@@ -3,16 +3,16 @@
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.1.xsd">
 
-	<bean id="sampleJob" class="boyko.SampleJob" />
+	<bean id="getTVShowData" class="com.wikishow.job.GetTVShowDataJob" />
 
-	<bean id="sampleJobBean"
+	<bean id="getTVShowDataBean"
 		class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
-		<property name="targetObject" ref="sampleJob" />
-		<property name="targetMethod" value="sampleJobMethod" />
+		<property name="targetObject" ref="getTVShowData" />
+		<property name="targetMethod" value="getTVShowData" />
 	</bean>
 
-	<bean id="sampleJobTrigger" class="org.springframework.scheduling.quartz.SimpleTriggerBean">
-		<property name="jobDetail" ref="sampleJobBean" />
+	<bean id="getTVShowDataTrigger" class="org.springframework.scheduling.quartz.SimpleTriggerBean">
+		<property name="jobDetail" ref="getTVShowDataBean" />
 		<property name="repeatInterval" value="10000" />
 		<property name="startDelay" value="3000" />
 	</bean>
@@ -20,12 +20,12 @@
 	<bean class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
 		<property name="jobDetails">
 			<list>
-				<ref bean="sampleJobBean" />
+				<ref bean="getTVShowDataBean" />
 			</list>
 		</property>
 		<property name="triggers">
 			<list>
-				<ref bean="sampleJobTrigger" />
+				<ref bean="getTVShowDataTrigger" />
 			</list>
 		</property>
 	</bean>
