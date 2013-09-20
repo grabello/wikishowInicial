@@ -1,8 +1,12 @@
 package com.wikishow.dao;
 
+import com.mongodb.WriteConcern;
 import com.wikishow.entity.TVDBData;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -44,7 +48,16 @@ public class TVDBDAOMongo {
         mongoTemplate.remove(tvdbData, COLLECTION_NAME);
     }
 
-    public void updateTVDBData(TVDBData tvdbData) {
-        mongoTemplate.insert(tvdbData, COLLECTION_NAME);
+    public void updateTVDBData(String field, String value, String updateField, String updateValue) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where(field).is(value));
+        query.fields().include(field);
+        Update update = new Update();
+        update.set(updateField, updateValue);
+        mongoTemplate.setWriteConcern(WriteConcern.ERRORS_IGNORED);
+
+        mongoTemplate.updateFirst(query, update, TVDBData.class, COLLECTION_NAME);
+
+
     }
 }
