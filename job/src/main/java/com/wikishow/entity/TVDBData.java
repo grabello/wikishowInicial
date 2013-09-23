@@ -18,6 +18,8 @@ public class TVDBData {
 
     private String lastUpdateTime;
 
+    private String mirror;
+
 
     public String getId() {
         return id;
@@ -33,5 +35,14 @@ public class TVDBData {
 
     public void setLastUpdateTime(String lastUpdateTime) {
         this.lastUpdateTime = lastUpdateTime;
+    }
+
+
+    public String getMirror() {
+        return mirror;
+    }
+
+    public void setMirror(String mirror) {
+        this.mirror = mirror;
     }
 }

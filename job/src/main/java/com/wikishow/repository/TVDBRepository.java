@@ -1,4 +1,4 @@
-package com.wikishow.dao;
+package com.wikishow.repository;
 
 import com.mongodb.WriteConcern;
 import com.wikishow.entity.TVDBData;
@@ -10,7 +10,6 @@ import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
-import java.util.UUID;
 
 /**
  * Created with IntelliJ IDEA.
@@ -21,7 +20,7 @@ import java.util.UUID;
  */
 
 @Repository
-public class TVDBDAOMongo {
+public class TVDBRepository {
 
     public static final String COLLECTION_NAME = "tvdbdata";
 
@@ -57,7 +56,5 @@ public class TVDBDAOMongo {
         mongoTemplate.setWriteConcern(WriteConcern.ERRORS_IGNORED);
 
         mongoTemplate.updateFirst(query, update, TVDBData.class, COLLECTION_NAME);
-
-
     }
 }
