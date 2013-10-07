@@ -2,41 +2,32 @@ package com.wikishow.entity;
 
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
+import org.springframework.data.mongodb.core.mapping.Document;
+
+import java.math.BigInteger;
 
 /**
  * Created with IntelliJ IDEA.
  * User: macbookpro
- * Date: 9/22/13
- * Time: 11:58 AM
+ * Date: 10/2/13
+ * Time: 9:17 PM
  * To change this template use File | Settings | File Templates.
  */
-public class CastEntity {
+@Document
+public class Role {
+
     @Id
-    private String id;
-
-    @Indexed
-    private String name;
-
+    private BigInteger id;
     @Indexed
     private String role;
+    private String tvShowId;
 
-    @Indexed
-    private String type;
-
-    public String getId() {
+    public BigInteger getId() {
         return id;
     }
 
-    public void setId(String id) {
+    public void setId(BigInteger id) {
         this.id = id;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
     }
 
     public String getRole() {
@@ -47,11 +38,11 @@ public class CastEntity {
         this.role = role;
     }
 
-    public String getType() {
-        return type;
+    public String getTvShowId() {
+        return tvShowId;
     }
 
-    public void setType(String type) {
-        this.type = type;
+    public void setTvShowId(String tvShowId) {
+        this.tvShowId = tvShowId;
     }
 }

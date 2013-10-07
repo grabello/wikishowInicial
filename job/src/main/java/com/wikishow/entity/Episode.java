@@ -1,5 +1,6 @@
 package com.wikishow.entity;
 
+import com.wikishow.repository.EpisodeRepository;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.DBRef;
@@ -16,22 +17,24 @@ import java.util.List;
  * To change this template use File | Settings | File Templates.
  */
 @Document
-public class EpisodeEntity {
+public class Episode {
 
     @Id
     private String id;
     @Indexed
-    private String name;
+    private String name_pt;
+    @Indexed
+    private String name_en;
     private Integer episodeNumber;
     private Integer seasonNumber;
     private String overview_en;
     private String overview_pt;
     @DBRef
-    private List<CastEntity> guestStars;
+    private List<CastAndCrew> guestStars;
     @DBRef
-    private List<CastEntity> directors;
+    private List<CastAndCrew> directors;
     @DBRef
-    private List<CastEntity> writers;
+    private List<CastAndCrew> writers;
     private Date firstAired;
 
     public String getId() {
@@ -42,12 +45,20 @@ public class EpisodeEntity {
         this.id = id;
     }
 
-    public String getName() {
-        return name;
+    public String getName_pt() {
+        return name_pt;
     }
 
-    public void setName(String name) {
-        this.name = name;
+    public void setName_pt(String name_pt) {
+        this.name_pt = name_pt;
+    }
+
+    public String getName_en() {
+        return name_en;
+    }
+
+    public void setName_en(String name_en) {
+        this.name_en = name_en;
     }
 
     public Integer getEpisodeNumber() {
@@ -82,27 +93,27 @@ public class EpisodeEntity {
         this.overview_pt = overview_pt;
     }
 
-    public List<CastEntity> getGuestStars() {
+    public List<CastAndCrew> getGuestStars() {
         return guestStars;
     }
 
-    public void setGuestStars(List<CastEntity> guestStars) {
+    public void setGuestStars(List<CastAndCrew> guestStars) {
         this.guestStars = guestStars;
     }
 
-    public List<CastEntity> getDirectors() {
+    public List<CastAndCrew> getDirectors() {
         return directors;
     }
 
-    public void setDirectors(List<CastEntity> directors) {
+    public void setDirectors(List<CastAndCrew> directors) {
         this.directors = directors;
     }
 
-    public List<CastEntity> getWriters() {
+    public List<CastAndCrew> getWriters() {
         return writers;
     }
 
-    public void setWriters(List<CastEntity> writers) {
+    public void setWriters(List<CastAndCrew> writers) {
         this.writers = writers;
     }
 

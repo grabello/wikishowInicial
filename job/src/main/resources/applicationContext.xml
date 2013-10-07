@@ -19,6 +19,6 @@
     <mvc:annotation-driven/>
 
     <!-- Loads Spring Task Scheduler related configurations -->
-    <import resource="spring-scheduler.xml"/>
     <import resource="mongodb.xml"/>
+    <import resource="spring-scheduler.xml"/>
 </beans>

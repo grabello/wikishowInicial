@@ -1,7 +1,7 @@
 package com.wikishow.repository;
 
 import com.mongodb.WriteConcern;
-import com.wikishow.entity.TVShowEntity;
+import com.wikishow.entity.TvShow;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
@@ -23,41 +23,43 @@ import java.util.Set;
 @Repository
 public class TVShowRepository {
 
-    public static final String COLLECTION_NAME = "tvshow";
+    public static final String COLLECTION_NAME = "tvShow";
     @Autowired
     private MongoTemplate mongoTemplate;
 
-    public void addTVShowData(TVShowEntity tvShowEntity) {
-        if (!mongoTemplate.collectionExists(TVShowEntity.class)) {
-            mongoTemplate.createCollection(TVShowEntity.class);
+    public void addTVShowData(TvShow tvShowEntity) {
+        if (!mongoTemplate.collectionExists(TvShow.class)) {
+            mongoTemplate.createCollection(TvShow.class);
         }
         mongoTemplate.insert(tvShowEntity, COLLECTION_NAME);
     }
 
-    public List<TVShowEntity> listAllEpisodes() {
-        return mongoTemplate.findAll(TVShowEntity.class, COLLECTION_NAME);
+    public List<TvShow> listAllEpisodes() {
+        return mongoTemplate.findAll(TvShow.class, COLLECTION_NAME);
     }
 
-    public TVShowEntity findById(String id) {
+    public TvShow findById(String id) {
         if (id == null) {
             return null;
         }
-        return mongoTemplate.findById(id, TVShowEntity.class, COLLECTION_NAME);
+        return mongoTemplate.findById(id, TvShow.class, COLLECTION_NAME);
     }
 
-    public void deleteTVShow(TVShowEntity TVShowEntity) {
-        mongoTemplate.remove(TVShowEntity, COLLECTION_NAME);
+    public void deleteTVShow(TvShow TvShow) {
+        mongoTemplate.remove(TvShow, COLLECTION_NAME);
     }
 
     public void updateTVShow(String field, String value, Map<String, Object> updateMap) {
         Query query = new Query();
         query.addCriteria(Criteria.where(field).is(value));
         query.fields().include(field);
+        System.out.println("Updating TVShow " + field + "=" + value);
         Update update = new Update();
         if (updateMap != null) {
             Set<String> fields = updateMap.keySet();
             if (fields != null && !fields.isEmpty()) {
                 for (String updateField : fields) {
+                    System.out.println(updateField + "=" + updateMap.get(updateField));
                     update.set(updateField, updateMap.get(updateField));
                 }
             } else {
@@ -67,6 +69,11 @@ public class TVShowRepository {
             return;
         }
         mongoTemplate.setWriteConcern(WriteConcern.ERRORS_IGNORED);
-        mongoTemplate.updateFirst(query, update, TVShowEntity.class, COLLECTION_NAME);
+        try {
+            mongoTemplate.updateFirst(query, update, TvShow.class, COLLECTION_NAME);
+        } catch (ClassCastException e) {
+            System.err.println("Failed to update tvshow " + field + "=" + value);
+
+        }
     }
 }

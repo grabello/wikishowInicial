@@ -1,5 +1,7 @@
 package com.wikishow.entity;
 
+import com.wikishow.repository.EpisodeRepository;
+import com.wikishow.repository.SeasonRepository;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.DBRef;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -15,7 +17,7 @@ import java.util.List;
  * To change this template use File | Settings | File Templates.
  */
 @Document
-public class SeasonEntity {
+public class Season {
 
     @Id
     private String id;
@@ -23,7 +25,7 @@ public class SeasonEntity {
     private Date dateFirst;
     private Date dateLast;
     @DBRef
-    private List<EpisodeEntity> episodes;
+    private List<Episode> episodes;
 
     public String getId() {
         return id;
@@ -57,11 +59,11 @@ public class SeasonEntity {
         this.dateLast = dateLast;
     }
 
-    public List<EpisodeEntity> getEpisodes() {
+    public List<Episode> getEpisodes() {
         return episodes;
     }
 
-    public void setEpisodes(List<EpisodeEntity> episodes) {
+    public void setEpisodes(List<Episode> episodes) {
         this.episodes = episodes;
     }
 }

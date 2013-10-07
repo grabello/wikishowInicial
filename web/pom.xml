@@ -150,6 +150,21 @@
             <artifactId>quartz</artifactId>
             <version>1.6.1</version>
         </dependency>
+        <dependency>
+            <groupId>commons-lang</groupId>
+            <artifactId>commons-lang</artifactId>
+            <version>2.6</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.data</groupId>
+            <artifactId>spring-data-mongodb</artifactId>
+            <version>1.3.1.RELEASE</version>
+        </dependency>
+        <!--<dependency>-->
+            <!--<groupId>com.wikishow.job</groupId>-->
+            <!--<artifactId>job</artifactId>-->
+            <!--<version>1.0-SNAPSHOT</version>-->
+        <!--</dependency>-->
     </dependencies>
     <build>
         <finalName>wikishow</finalName>
@@ -162,7 +177,9 @@
                     <execution>
                         <id>copy-dependencies</id>
                         <phase>package</phase>
-                        <goals><goal>copy-dependencies</goal></goals>
+                        <goals>
+                            <goal>copy-dependencies</goal>
+                        </goals>
                     </execution>
                 </executions>
             </plugin>

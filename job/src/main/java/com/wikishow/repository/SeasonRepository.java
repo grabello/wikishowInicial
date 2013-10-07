@@ -1,7 +1,7 @@
 package com.wikishow.repository;
 
 import com.mongodb.WriteConcern;
-import com.wikishow.entity.SeasonEntity;
+import com.wikishow.entity.Season;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
@@ -24,27 +24,26 @@ import java.util.Set;
 public class SeasonRepository {
 
     public static final String COLLECTION_NAME = "season";
-
     @Autowired
     private MongoTemplate mongoTemplate;
 
-    public void addSeasonData(SeasonEntity seasonEntity) {
-        if (!mongoTemplate.collectionExists(SeasonEntity.class)) {
-            mongoTemplate.createCollection(SeasonEntity.class);
+    public void addSeasonData(Season seasonEntity) {
+        if (!mongoTemplate.collectionExists(Season.class)) {
+            mongoTemplate.createCollection(Season.class);
         }
         mongoTemplate.insert(seasonEntity, COLLECTION_NAME);
     }
 
-    public List<SeasonEntity> listAllEpisodes() {
-        return mongoTemplate.findAll(SeasonEntity.class, COLLECTION_NAME);
+    public List<Season> listAllEpisodes() {
+        return mongoTemplate.findAll(Season.class, COLLECTION_NAME);
     }
 
-    public SeasonEntity findById(String id) {
-        return mongoTemplate.findById(id, SeasonEntity.class, COLLECTION_NAME);
+    public Season findById(String id) {
+        return mongoTemplate.findById(id, Season.class, COLLECTION_NAME);
     }
 
-    public void deleteSeason(SeasonEntity SeasonEntity) {
-        mongoTemplate.remove(SeasonEntity, COLLECTION_NAME);
+    public void deleteSeason(Season Season) {
+        mongoTemplate.remove(Season, COLLECTION_NAME);
     }
 
     public void updateSeason(String field, String value, Map<String, Object> updateMap) {
@@ -52,10 +51,12 @@ public class SeasonRepository {
         query.addCriteria(Criteria.where(field).is(value));
         query.fields().include(field);
         Update update = new Update();
+        System.out.println("Updating Season " + field + "=" + value);
         if (updateMap != null) {
             Set<String> fields = updateMap.keySet();
             if (fields != null && !fields.isEmpty()) {
                 for (String updateField : fields) {
+                    System.out.println(updateField + "=" + updateMap.get(updateField));
                     update.set(updateField, updateMap.get(updateField));
                 }
             } else {
@@ -65,6 +66,11 @@ public class SeasonRepository {
             return;
         }
         mongoTemplate.setWriteConcern(WriteConcern.ERRORS_IGNORED);
-        mongoTemplate.updateFirst(query, update, SeasonEntity.class, COLLECTION_NAME);
+        try {
+            mongoTemplate.updateFirst(query, update, Season.class, COLLECTION_NAME);
+        } catch (ClassCastException e) {
+            System.err.println("Failed to update season " + field + "=" + value);
+
+        }
     }
 }

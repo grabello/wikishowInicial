@@ -16,7 +16,7 @@ import java.util.List;
  * To change this template use File | Settings | File Templates.
  */
 @Document
-public class TVShowEntity {
+public class TvShow {
 
     @Id
     private String id;
@@ -28,9 +28,9 @@ public class TVShowEntity {
     private String overview_pt;
     private Boolean isEnded;
     @DBRef
-    private List<SeasonEntity> seasons;
+    private List<Season> seasons;
     @DBRef
-    private List<CastEntity> cast;
+    private List<CastAndCrew> cast;
 
     public String getId() {
         return id;
@@ -88,19 +88,19 @@ public class TVShowEntity {
         isEnded = ended;
     }
 
-    public List<SeasonEntity> getSeasons() {
+    public List<Season> getSeasons() {
         return seasons;
     }
 
-    public void setSeasons(List<SeasonEntity> seasons) {
+    public void setSeasons(List<Season> seasons) {
         this.seasons = seasons;
     }
 
-    public List<CastEntity> getCast() {
+    public List<CastAndCrew> getCast() {
         return cast;
     }
 
-    public void setCast(List<CastEntity> cast) {
+    public void setCast(List<CastAndCrew> cast) {
         this.cast = cast;
     }
 }

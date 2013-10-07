@@ -23,7 +23,6 @@ import java.util.List;
 public class TVDBRepository {
 
     public static final String COLLECTION_NAME = "tvdbdata";
-
     @Autowired
     private MongoTemplate mongoTemplate;
 
@@ -52,9 +51,14 @@ public class TVDBRepository {
         query.addCriteria(Criteria.where(field).is(value));
         query.fields().include(field);
         Update update = new Update();
+        System.out.println("Updating TVDBData " + field + "=" + value);
         update.set(updateField, updateValue);
+        System.out.println(updateField + "=" + updateValue);
         mongoTemplate.setWriteConcern(WriteConcern.ERRORS_IGNORED);
-
-        mongoTemplate.updateFirst(query, update, TVDBData.class, COLLECTION_NAME);
+        try {
+            mongoTemplate.updateFirst(query, update, TVDBData.class, COLLECTION_NAME);
+        } catch (ClassCastException e) {
+            System.err.println("Failed to update tvshowdb " + field + "=" + value);
+        }
     }
 }
