@@ -4,20 +4,14 @@
  */
 package com.wikishow.controller;
 
-import com.google.api.client.http.HttpResponse;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
-import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
-import org.springframework.web.bind.annotation.RequestParam;
-
-import java.util.Enumeration;
 
 /**
  * Handles requests for the application home page.
@@ -36,7 +30,6 @@ public class DefaultController {
                 System.out.println(cookie.getValue());
             }
         }
-
 
         return "index";
     }

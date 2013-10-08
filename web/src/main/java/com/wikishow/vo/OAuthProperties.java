@@ -27,17 +27,14 @@ import java.io.InputStream;
 public class OAuthProperties {
 
     public static final String DEFAULT_OAUTH_PROPERTIES_FILE_NAME = "oauth.properties";
-
     /**
      * The OAuth 2.0 Client ID
      */
     private String clientId;
-
     /**
      * The OAuth 2.0 Client Secret
      */
     private String clientSecret;
-
     /**
      * The Google APIs scopes to access
      */
@@ -47,10 +44,10 @@ public class OAuthProperties {
      * Instantiates a new OauthProperties object reading its values from the
      * {@code OAUTH_PROPERTIES_FILE_NAME} properties file.
      *
-     * @throws IOException                    IF there is an issue reading the {@code propertiesFile}
+     * @throws IOException IF there is an issue reading the {@code propertiesFile}
      * @throws OauthPropertiesFormatException If the given {@code propertiesFile}
-     *                                        is not of the right format (does not contains the keys {@code
-     *                                        clientId}, {@code clientSecret} and {@code scopes})
+     * is not of the right format (does not contains the keys {@code
+     * clientId}, {@code clientSecret} and {@code scopes})
      */
     public OAuthProperties() throws IOException {
         this(OAuthProperties.class.getResourceAsStream(DEFAULT_OAUTH_PROPERTIES_FILE_NAME));
@@ -63,10 +60,10 @@ public class OAuthProperties {
      * @param propertiesFile the InputStream to read an OAuth Properties file. The
      *                       file should contain the keys {@code clientId}, {@code
      *                       clientSecret} and {@code scopes}
-     * @throws IOException                    IF there is an issue reading the {@code propertiesFile}
+     * @throws IOException IF there is an issue reading the {@code propertiesFile}
      * @throws OAuthPropertiesFormatException If the given {@code propertiesFile}
-     *                                        is not of the right format (does not contains the keys {@code
-     *                                        clientId}, {@code clientSecret} and {@code scopes})
+     * is not of the right format (does not contains the keys {@code
+     * clientId}, {@code clientSecret} and {@code scopes})
      */
     public OAuthProperties(InputStream propertiesFile) throws IOException {
         //Properties oauthProperties = new Properties();

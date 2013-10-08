@@ -14,6 +14,12 @@
 
     <dependencies>
         <dependency>
+            <groupId>com.wikishow.database</groupId>
+            <artifactId>database</artifactId>
+            <version>1.0-SNAPSHOT</version>
+            <type>jar</type>
+        </dependency>
+        <dependency>
             <groupId>org.opensymphony.quartz</groupId>
             <artifactId>quartz</artifactId>
             <version>1.6.1</version>
