@@ -6,7 +6,7 @@
     <packaging>pom</packaging>
     <version>1.0-SNAPSHOT</version>
     <modules>
-        <module>database</module>
+        <module>backoffice</module>
         <module>job</module>
         <module>web</module>
     </modules>

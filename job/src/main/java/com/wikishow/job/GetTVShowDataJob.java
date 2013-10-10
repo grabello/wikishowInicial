@@ -521,7 +521,7 @@ public class GetTVShowDataJob {
                     s3.createBucket("2ndscreentvshow");
                 }
                 StringBuffer s3Key = new StringBuffer();
-                s3Key.append("actors").append("/");
+                s3Key.append(seriesId).append("/cast/");
                 s3Key.append(imageURL.substring(imageURL.lastIndexOf("/") + 1));
 
                 S3Object s3object = null;
@@ -547,6 +547,7 @@ public class GetTVShowDataJob {
 
             if (roleEntity == null) {
                 roleEntity = new Role();
+                roleEntity.setId(id);
                 roleEntity.setRole(role);
                 roleEntity.setTvShowId(seriesId);
                 roleRepository.addRole(roleEntity);
@@ -557,7 +558,6 @@ public class GetTVShowDataJob {
                 actorEntity = new CastAndCrew();
                 actorEntity.setType("Actor");
                 actorEntity.setName(name);
-                actorEntity.setId(id);
                 List<Role> roleList = new ArrayList<Role>();
                 roleList.add(roleEntity);
                 actorEntity.setRole(roleList);

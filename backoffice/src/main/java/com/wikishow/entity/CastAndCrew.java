@@ -1,26 +1,30 @@
 package com.wikishow.entity;
 
+import com.wikishow.repository.CastRepository;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.math.BigInteger;
+import java.util.List;
 
 /**
  * Created with IntelliJ IDEA.
  * User: macbookpro
- * Date: 10/2/13
- * Time: 9:17 PM
+ * Date: 9/22/13
+ * Time: 11:58 AM
  * To change this template use File | Settings | File Templates.
  */
 @Document
-public class Role {
-
+public class CastAndCrew {
     @Id
     private BigInteger id;
     @Indexed
-    private String role;
-    private String tvShowId;
+    private String name;
+    @Indexed
+    private List<Role> role;
+    @Indexed
+    private String type;
 
     public BigInteger getId() {
         return id;
@@ -30,19 +34,27 @@ public class Role {
         this.id = id;
     }
 
-    public String getRole() {
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public List<Role> getRole() {
         return role;
     }
 
-    public void setRole(String role) {
+    public void setRole(List<Role> role) {
         this.role = role;
     }
 
-    public String getTvShowId() {
-        return tvShowId;
+    public String getType() {
+        return type;
     }
 
-    public void setTvShowId(String tvShowId) {
-        this.tvShowId = tvShowId;
+    public void setType(String type) {
+        this.type = type;
     }
 }
