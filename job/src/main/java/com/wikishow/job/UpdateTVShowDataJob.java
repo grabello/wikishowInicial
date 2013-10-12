@@ -141,15 +141,10 @@ public class UpdateTVShowDataJob {
 
         if (tvdbData == null) {
             tvdbData = new TVDBData();
-            tvdbData.setLastUpdateTime(timeUpdate);
-            tvdbData.setMirror(xmlMirror);
-            tvDBRepository.addTVDBData(tvdbData);
-        } else {
-            tvdbData.setLastUpdateTime(timeUpdate);
-            tvdbData.setMirror(xmlMirror);
-            tvDBRepository.updateTVDBData("_id", tvdbData.getId(), "lastUpdateTime", tvdbData.getLastUpdateTime());
         }
-
+        tvdbData.setLastUpdateTime(timeUpdate);
+        tvdbData.setMirror(xmlMirror);
+        tvDBRepository.addTVDBData(tvdbData);
     }
 
     private void processBanners(String id, String url) throws IOException {

@@ -21,22 +21,14 @@ import java.util.List;
  * To change this template use File | Settings | File Templates.
  */
 @Repository
-public class PersonRepository {
+public class PersonRepository extends DefaultRepository{
 
-    private static final String ACCESS_KEY = "AKIAJTBPDH4NJDBK7YVQ";
-    private static final String SECRET_KEY = "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";
     private static final Integer MIN = 1;
     private static final Integer MAX = 999999;
-    DynamoDBMapper mapper = null;
 
     public void addPersonData(Person personEntity) {
         getMapper();
         mapper.save(personEntity);
-    }
-
-    public List<Person> listAllPersons() {
-//        return mongoTemplate.findAll(Person.class, COLLECTION_NAME);
-        return null;
     }
 
     public Person findById(Integer id) {
@@ -73,14 +65,6 @@ public class PersonRepository {
         } while (findById(id) != null);
 
         return id;
-    }
-
-    public void getMapper() {
-        if (mapper == null) {
-            AWSCredentials credentials = new BasicAWSCredentials(ACCESS_KEY, SECRET_KEY);
-            AmazonDynamoDBClient client = new AmazonDynamoDBClient(credentials);
-            mapper = new DynamoDBMapper(client);
-        }
     }
 
 }

@@ -1,13 +1,7 @@
 package com.wikishow.repository;
 
 import com.wikishow.entity.Banners;
-import com.wikishow.entity.NewTVShow;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.stereotype.Repository;
-
-import java.math.BigInteger;
-import java.util.List;
 
 /**
  * Created with IntelliJ IDEA.
@@ -17,22 +11,16 @@ import java.util.List;
  * To change this template use File | Settings | File Templates.
  */
 @Repository
-public class BannersRepository {
-
-    public static final String COLLECTION_NAME = "banners";
-    @Autowired
-    private MongoTemplate mongoTemplate;
+public class BannersRepository extends DefaultRepository {
 
     public void addBanner(Banners banners) {
-        if (!mongoTemplate.collectionExists(Banners.class)) {
-            mongoTemplate.createCollection(Banners.class);
-        }
-        mongoTemplate.insert(banners, COLLECTION_NAME);
+        getMapper();
+        mapper.save(banners);
     }
 
     public Banners findById(String id) {
-        return mongoTemplate.findById(id, Banners.class, COLLECTION_NAME);
+        getMapper();
+        return mapper.load(Banners.class, id);
     }
-
 
 }

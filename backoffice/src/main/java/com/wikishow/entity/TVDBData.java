@@ -1,8 +1,8 @@
 package com.wikishow.entity;
 
-import com.wikishow.repository.TVDBRepository;
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.mapping.Document;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 
 /**
  * Created with IntelliJ IDEA.
@@ -11,14 +11,14 @@ import org.springframework.data.mongodb.core.mapping.Document;
  * Time: 9:37 PM
  * To change this template use File | Settings | File Templates.
  */
-@Document(collection = TVDBRepository.COLLECTION_NAME)
+@DynamoDBTable(tableName = "TVDBData")
 public class TVDBData {
 
-    @Id
     private String id;
     private String lastUpdateTime;
     private String mirror;
 
+    @DynamoDBHashKey(attributeName = "Id")
     public String getId() {
         return id;
     }
@@ -27,6 +27,7 @@ public class TVDBData {
         this.id = id;
     }
 
+    @DynamoDBAttribute(attributeName = "LastUpdateTime")
     public String getLastUpdateTime() {
         return lastUpdateTime;
     }
@@ -35,6 +36,7 @@ public class TVDBData {
         this.lastUpdateTime = lastUpdateTime;
     }
 
+    @DynamoDBAttribute(attributeName = "Mirror")
     public String getMirror() {
         return mirror;
     }
