@@ -8,21 +8,54 @@ package com.wikishow.helper;
  * To change this template use File | Settings | File Templates.
  */
 public class HexBytesTranslator {
-    public static String toHex(byte[] cryptedBytes) {
-        StringBuilder sb = new StringBuilder();
-        for (byte b : cryptedBytes) {
-            sb.append(String.format("%02X", b));
-        }
-        return sb.toString();
+
+    /**
+     * Constructor for HexBytesTranslator.
+     */
+    private HexBytesTranslator() {
+        super();
     }
 
-    public static byte[] fromHex(String s) {
-        int len = s.length();
-        byte[] data = new byte[len / 2];
-        for (int i = 0; i < len; i += 2) {
-            data[i / 2] = (byte) ((Character.digit(s.charAt(i), 16) << 4)
-                    + Character.digit(s.charAt(i + 1), 16));
+    /**
+     * To hex.
+     *
+     * @param seq
+     *            the seq
+     *
+     * @return the string
+     */
+    public static String toHex(byte[] seq) {
+        StringBuffer buffer = new StringBuffer(seq.length * 2);
+        int i, j;
+
+        for (i = 0; i < seq.length; i++) {
+            j = seq[i];
+            if (j < 0) {
+                j += 256;
+            }
+            buffer.append((j < 16 ? "0" : "") + Integer.toHexString(j));
         }
-        return data;
+
+        return buffer.toString();
+
+    }
+
+    /**
+     * From hex.
+     *
+     * @param seq
+     *            the seq
+     *
+     * @return the byte[]
+     */
+    public static byte[] fromHex(String seq) {
+        byte[] buffer = new byte[seq.length() / 2];
+        String hexNumber;
+
+        for (int i = 0; i < seq.length(); i += 2) {
+            hexNumber = seq.substring(i, i + 2).toUpperCase();
+            buffer[i / 2] = (byte) Integer.parseInt(hexNumber, 16);
+        }
+        return buffer;
     }
 }

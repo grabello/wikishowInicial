@@ -6,6 +6,7 @@ import com.google.api.client.googleapis.auth.oauth2.draft10.GoogleAuthorizationR
 import com.google.api.client.http.HttpTransport;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.jackson.JacksonFactory;
+import com.wikishow.entity.Person.LoginType;
 import com.wikishow.helper.AuthCookie;
 import com.wikishow.helper.LoginHelper;
 import com.wikishow.service.LoginService;
@@ -20,7 +21,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.util.Date;
+import java.util.Calendar;
 
 /**
  * Created with IntelliJ IDEA.
@@ -140,23 +141,17 @@ public class GoogleLoginController {
 
         PersonVO personVO = null;
         try {
-            personVO = loginService.saveLogin((String) jsonObject.get("email"), accessTokenResponse.refreshToken, accessTokenResponse.accessToken, 'G');
+            personVO = loginService.saveLogin((String) jsonObject.get("email"), accessTokenResponse.refreshToken, accessTokenResponse.accessToken, LoginType.GOOGLE.getType());
         } catch (JSONException e) {
             e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
         }
 
         if (personVO != null) {
-            AuthCookie authCookie = new AuthCookie(personVO.getId(), new Date().getTime(), accessTokenResponse.expiresIn.intValue());
+            String ip = LoginHelper.getIp(req);
+            AuthCookie authCookie = new AuthCookie(personVO.getId(), ip, Calendar.getInstance()
+                    .getTimeInMillis(), accessTokenResponse.expiresIn.intValue());
             authCookie.createHttpOnlyCookie(resp);
         }
-
-//        try {
-//            Cookie wikiCookie = new Cookie("com/wikishow", jsonObject.getString("email"));
-//            resp.addCookie(wikiCookie);
-//        } catch (JSONException e) {
-//            e.printStackTrace();
-//        }
-
         return "loggedin";
 
     }

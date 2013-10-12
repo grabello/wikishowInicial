@@ -2,8 +2,12 @@ package com.wikishow.helper;
 
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletResponse;
+import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Date;
+import java.util.Locale;
+import java.util.SimpleTimeZone;
 
 /**
  * Created with IntelliJ IDEA.
@@ -15,7 +19,13 @@ import java.util.Date;
 public class CookieUtil {
     public static final String AUTHENTICATION_COOKIE_NAME = "wikishow";
     public static final String COOKIE_WIKISHOW_DOMAIN = "localhost:8080/wikishow";
-    private static final SimpleDateFormat COOKIE_DATE_FORMAT = new SimpleDateFormat("DD/MM/YYYY HH24:MI");
+    private static final DateFormat COOKIE_DATE_FORMAT;
+
+    static {
+        COOKIE_DATE_FORMAT = new SimpleDateFormat("EEE, dd-MMM-yyyy HH:mm:ss zzz", Locale.ENGLISH);
+        Calendar cal = Calendar.getInstance(new SimpleTimeZone(0, "GMT"));
+        COOKIE_DATE_FORMAT.setCalendar(cal);
+    }
 
     public static String createHttpOnlyCookie(HttpServletResponse response, Cookie cookie) {
         String httpOnlyCookie = createHttpOnlyCookie(cookie);
@@ -40,19 +50,19 @@ public class CookieUtil {
         if (cookie.getMaxAge() > -1) {
             Date date = new Date();
             date.setTime(date.getTime() + (1000L * cookie.getMaxAge()));
-            header.append("; Expires=" + COOKIE_DATE_FORMAT.format(date));
+//            header.append("; Expires=" + COOKIE_DATE_FORMAT.format(date));
         }
 
-        if (cookie.getDomain() != null) {
-            header.append("; Domain=" + cookie.getDomain());
-        }
+//        if (cookie.getDomain() != null) {
+//            header.append("; Domain=" + cookie.getDomain());
+//        }
 
-        if (cookie.getPath() != null) {
-            header.append("; Path=" + cookie.getPath());
-        }
+//        if (cookie.getPath() != null) {
+//            header.append("; Path=" + cookie.getPath());
+//        }
 
         // Todos os cookies devem ser Secure e HttpOnly
-        header.append("; Secure; HttpOnly");
+        //header.append("; Secure; HttpOnly");
 
         return header.toString();
     }

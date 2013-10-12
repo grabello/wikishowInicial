@@ -5,7 +5,6 @@ import org.apache.commons.lang.StringUtils;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.math.BigInteger;
 import java.util.Calendar;
 
 /**
@@ -17,22 +16,26 @@ import java.util.Calendar;
  */
 public class AuthCookie {
     private Cookie authCookie;
-    private BigInteger personId;
+    private Integer personId;
     private long timestamp;
     private int sessionTime;
+    private String ip;
 
-    public AuthCookie(BigInteger personId, long timestamp, int sessionTime) {
+    public AuthCookie(Integer personId, String ip, long timestamp, int sessionTime) {
         super();
         this.personId = personId;
         this.timestamp = timestamp;
         this.sessionTime = sessionTime;
+        this.ip = ip;
     }
 
     public AuthCookie(HttpServletRequest request) {
 
         this.authCookie = getAuthCookie(request);
+
         if (authCookie == null) {
             System.err.println("Cookie de autenticacao do usuario nao localizado");
+            return;
         }
 
         String encryptedValue = authCookie.getValue();
@@ -50,7 +53,8 @@ public class AuthCookie {
         }
 
         int idx = 0;
-        this.personId = BigInteger.valueOf(Long.parseLong(cookie[idx++]));
+        this.personId = Integer.valueOf(cookie[idx++]);
+        this.ip = cookie[idx++];
         this.timestamp = Long.parseLong(cookie[idx++]);
         this.sessionTime = Integer.parseInt(cookie[idx++]);
     }
@@ -79,6 +83,8 @@ public class AuthCookie {
         StringBuilder decryptedValue = new StringBuilder();
         decryptedValue.append(personId);
         decryptedValue.append("|");
+        decryptedValue.append(ip);
+        decryptedValue.append("|");
         decryptedValue.append(timestamp);
         decryptedValue.append("|");
         decryptedValue.append(sessionTime);
@@ -89,9 +95,10 @@ public class AuthCookie {
         ecryptedValue = crypt.encrypt(decryptedValue.toString());
 
         authCookie = new Cookie(CookieUtil.AUTHENTICATION_COOKIE_NAME, ecryptedValue);
-        authCookie.setDomain(CookieUtil.COOKIE_WIKISHOW_DOMAIN);
-        authCookie.setMaxAge(sessionTime);
+//        authCookie.setDomain(CookieUtil.COOKIE_WIKISHOW_DOMAIN);
+        authCookie.setMaxAge(sessionTime * 1000);
         authCookie.setPath("/");
+        //response.addCookie(authCookie);
         return CookieUtil.createHttpOnlyCookie(response, authCookie);
     }
 
@@ -115,8 +122,31 @@ public class AuthCookie {
         return timestamp;
     }
 
-    public BigInteger getPersonId() {
+    public void setTimestamp(long timestamp) {
+        this.timestamp = timestamp;
+    }
+
+    public Integer getPersonId() {
         return personId;
     }
 
+    public void setPersonId(Integer personId) {
+        this.personId = personId;
+    }
+
+    public int getSessionTime() {
+        return sessionTime;
+    }
+
+    public void setSessionTime(int sessionTime) {
+        this.sessionTime = sessionTime;
+    }
+
+    public String getIp() {
+        return ip;
+    }
+
+    public void setIp(String ip) {
+        this.ip = ip;
+    }
 }

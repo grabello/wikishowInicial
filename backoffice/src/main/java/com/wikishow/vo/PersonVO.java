@@ -1,7 +1,5 @@
 package com.wikishow.vo;
 
-import java.math.BigInteger;
-
 /**
  * Created with IntelliJ IDEA.
  * User: macbookpro
@@ -11,13 +9,13 @@ import java.math.BigInteger;
  */
 public class PersonVO {
 
-    private BigInteger id;
+    private Integer id;
     private String email;
     private String refreshToken;
     private String accessToken;
     private char type;
 
-    public PersonVO(BigInteger id, String email, String refreshToken, String accessToken, char type) {
+    public PersonVO(Integer id, String email, String refreshToken, String accessToken, char type) {
         this.id = id;
         this.email = email;
         this.refreshToken = refreshToken;
@@ -25,11 +23,11 @@ public class PersonVO {
         this.type = type;
     }
 
-    public BigInteger getId() {
+    public Integer getId() {
         return id;
     }
 
-    public void setId(BigInteger id) {
+    public void setId(Integer id) {
         this.id = id;
     }
 

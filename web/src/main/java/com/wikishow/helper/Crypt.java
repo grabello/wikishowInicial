@@ -1,7 +1,10 @@
 package com.wikishow.helper;
 
+import org.apache.commons.codec.binary.Base64;
+
 import javax.crypto.*;
 import javax.crypto.spec.DESKeySpec;
+import javax.crypto.spec.SecretKeySpec;
 import java.io.IOException;
 import java.security.*;
 import java.security.spec.InvalidKeySpecException;
@@ -27,8 +30,8 @@ public class Crypt {
      * Instantiates a new crypt.
      */
     private Crypt() {
-        this.publicKey = "publicKey";
-        this.param = "parameter";
+        this.publicKey = "552AAAAAD0A76DBF0D52A5C56A25D4AC";
+        this.param = "D72AA92AD0A76DBF6D52A5C56A2554AC";
     }
 
     /**
@@ -93,10 +96,32 @@ public class Crypt {
     }
 
     public String encrypt(String plainString) {
-        Key secretKey = getSymmetricKey(publicKey);
-        AlgorithmParameters params = getSymmetricParam(param);
-        byte[] cryptedBytes = encryptSymmetric(plainString.getBytes(), secretKey, params);
-        return HexBytesTranslator.toHex(cryptedBytes);
+
+        try {
+            Cipher cipher = Cipher.getInstance("AES/ECB/PKCS5Padding");
+            final SecretKeySpec secretKey = new SecretKeySpec(HexBytesTranslator.fromHex(publicKey), "AES");
+            cipher.init(Cipher.ENCRYPT_MODE, secretKey);
+//            final String encryptedString = HexBytesTranslator.toHex(cipher.doFinal(plainString.getBytes()));
+//            return encryptedString;
+            final String encryptedString = Base64.encodeBase64String(cipher.doFinal(plainString.getBytes()));
+            return encryptedString;
+        } catch (InvalidKeyException e) {
+            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+        } catch (IllegalBlockSizeException e) {
+            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+        } catch (BadPaddingException e) {
+            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+        } catch (NoSuchPaddingException e) {
+            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+        }
+        return null;
+
+//        Key secretKey = getSymmetricKey(publicKey);
+//        AlgorithmParameters params = getSymmetricParam(param);
+//        byte[] cryptedBytes = encryptSymmetric(plainString.getBytes(), secretKey, params);
+//        return HexBytesTranslator.toHex(cryptedBytes);
     }
 
     public byte[] encrypt(byte[] plainBytes) {
@@ -106,11 +131,30 @@ public class Crypt {
     }
 
     public String decrypt(String s) {
-        byte[] encryptedData = HexBytesTranslator.fromHex(s);
-        Key secretKey = getSymmetricKey(publicKey);
-        AlgorithmParameters parameters = getSymmetricParam(param);
-        byte[] decryptedBytes = decryptSymmetric(encryptedData, secretKey, parameters);
-        return new String(decryptedBytes);
+        try {
+
+            Cipher cipher = Cipher.getInstance("AES/ECB/PKCS5PADDING");
+            final SecretKeySpec secretKey = new SecretKeySpec(HexBytesTranslator.fromHex(publicKey), "AES");
+            cipher.init(Cipher.DECRYPT_MODE, secretKey);
+            final String decryptedString = new String(cipher.doFinal(Base64.decodeBase64(s)));
+            return decryptedString;
+        } catch (IllegalBlockSizeException e) {
+            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+        } catch (InvalidKeyException e) {
+            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+        } catch (BadPaddingException e) {
+            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+        } catch (NoSuchPaddingException e) {
+            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+        }
+        return null;
+//        byte[] encryptedData = HexBytesTranslator.fromHex(s);
+//        Key secretKey = getSymmetricKey(publicKey);
+//        AlgorithmParameters parameters = getSymmetricParam(param);
+//        byte[] decryptedBytes = decryptSymmetric(encryptedData, secretKey, parameters);
+//        return new String(decryptedBytes);
     }
 
     public byte[] decrypt(byte[] encryptedBytes) {

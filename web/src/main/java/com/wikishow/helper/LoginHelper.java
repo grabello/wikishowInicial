@@ -3,6 +3,7 @@ package com.wikishow.helper;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import javax.servlet.http.HttpServletRequest;
 import java.io.*;
 import java.net.URL;
 import java.nio.charset.Charset;
@@ -48,4 +49,28 @@ public class LoginHelper {
         }
         return sb.toString();
     }
+
+    public static String getIp(HttpServletRequest request) {
+        String ipAddress = request.getHeader("X-FORWARDED-FOR");
+        if (ipAddress == null) {
+            ipAddress = request.getRemoteAddr();
+        } else {
+            // http://en.wikipedia.org/wiki/X-Forwarded-For
+            if (ipAddress.indexOf(",") > 0) {
+                String[] ipAddresses = ipAddress.split(",");
+                ipAddress = ipAddresses[0].trim();
+            }
+        }
+
+        if (ipAddress == null) {
+            System.err.println("Ip not found correctly: " + ipAddress);
+            System.err.println("X-FORWARDED-FOR: " + request.getHeader("X-FORWARDED-FOR"));
+            System.err.println("getRemoteAddr: " + request.getRemoteAddr());
+            System.err.println("Ip is not valid: " + ipAddress + " - " + request.getHeader("X-FORWARDED-FOR")
+                    + " - " + request.getRemoteAddr());
+        }
+
+        return ipAddress;
+    }
+
 }
