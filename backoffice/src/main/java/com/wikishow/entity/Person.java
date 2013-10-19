@@ -17,8 +17,10 @@ public class Person {
     private String refreshToken;
     private String accessToken;
     private String type;
+    private String name;
 
-    @DynamoDBHashKey(attributeName = "Id")
+
+    @DynamoDBAttribute(attributeName = "Id")
     public Integer getId() {
         return id;
     }
@@ -27,13 +29,22 @@ public class Person {
         this.id = id;
     }
 
-    @DynamoDBIndexRangeKey(attributeName = "Email", localSecondaryIndexName = "EmailIndex")
+    @DynamoDBHashKey(attributeName = "Email")
     public String getEmail() {
         return email;
     }
 
     public void setEmail(String email) {
         this.email = email;
+    }
+
+    @DynamoDBAttribute(attributeName = "Name")
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
     }
 
     @DynamoDBAttribute(attributeName = "RefreshToken")

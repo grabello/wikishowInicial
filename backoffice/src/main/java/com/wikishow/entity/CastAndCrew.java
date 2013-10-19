@@ -1,12 +1,6 @@
 package com.wikishow.entity;
 
-import com.wikishow.repository.CastRepository;
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.index.Indexed;
-import org.springframework.data.mongodb.core.mapping.Document;
-
-import java.math.BigInteger;
-import java.util.List;
+import com.amazonaws.services.dynamodbv2.datamodeling.*;
 
 /**
  * Created with IntelliJ IDEA.
@@ -15,25 +9,13 @@ import java.util.List;
  * Time: 11:58 AM
  * To change this template use File | Settings | File Templates.
  */
-@Document
+@DynamoDBTable(tableName = "CastAndCrew")
 public class CastAndCrew {
-    @Id
-    private BigInteger id;
-    @Indexed
+
     private String name;
-    @Indexed
-    private List<Role> role;
-    @Indexed
     private String type;
 
-    public BigInteger getId() {
-        return id;
-    }
-
-    public void setId(BigInteger id) {
-        this.id = id;
-    }
-
+    @DynamoDBHashKey(attributeName = "Name")
     public String getName() {
         return name;
     }
@@ -42,14 +24,7 @@ public class CastAndCrew {
         this.name = name;
     }
 
-    public List<Role> getRole() {
-        return role;
-    }
-
-    public void setRole(List<Role> role) {
-        this.role = role;
-    }
-
+    @DynamoDBAttribute(attributeName = "Type")
     public String getType() {
         return type;
     }

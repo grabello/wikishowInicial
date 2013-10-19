@@ -17,8 +17,4 @@
     <!-- Configures the annotation-driven Spring MVC Controller programming model.
     Note that, with Spring 3.0, this tag works in Servlet MVC only!  -->
     <mvc:annotation-driven/>
-
-    <!-- Loads Spring Task Scheduler related configurations -->
-    <import resource="mongodb.xml"/>
-    <!--<import resource="spring-scheduler.xml"/>-->
 </beans>

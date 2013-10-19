@@ -1,13 +1,12 @@
 package com.wikishow.entity;
 
-import com.wikishow.repository.EpisodeRepository;
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.index.Indexed;
-import org.springframework.data.mongodb.core.mapping.DBRef;
-import org.springframework.data.mongodb.core.mapping.Document;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIndexRangeKey;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 
 import java.util.Date;
-import java.util.List;
+import java.util.Set;
 
 /**
  * Created with IntelliJ IDEA.
@@ -16,27 +15,24 @@ import java.util.List;
  * Time: 11:47 AM
  * To change this template use File | Settings | File Templates.
  */
-@Document
+@DynamoDBTable(tableName = "Episode")
 public class Episode {
 
-    @Id
     private String id;
-    @Indexed
     private String name_pt;
-    @Indexed
     private String name_en;
     private Integer episodeNumber;
+    private String seasonID;
+    private String seriesID;
     private Integer seasonNumber;
     private String overview_en;
     private String overview_pt;
-    @DBRef
-    private List<CastAndCrew> guestStars;
-    @DBRef
-    private List<CastAndCrew> directors;
-    @DBRef
-    private List<CastAndCrew> writers;
+    private Set<String> guestStars;
+    private Set<String> directors;
+    private Set<String> writers;
     private Date firstAired;
 
+    @DynamoDBHashKey(attributeName = "Id")
     public String getId() {
         return id;
     }
@@ -45,6 +41,7 @@ public class Episode {
         this.id = id;
     }
 
+    @DynamoDBIndexRangeKey(attributeName = "NamePT", localSecondaryIndexName = "NamePTIndex")
     public String getName_pt() {
         return name_pt;
     }
@@ -53,6 +50,7 @@ public class Episode {
         this.name_pt = name_pt;
     }
 
+    @DynamoDBIndexRangeKey(attributeName = "NameEN", localSecondaryIndexName = "NameENIndex")
     public String getName_en() {
         return name_en;
     }
@@ -61,6 +59,7 @@ public class Episode {
         this.name_en = name_en;
     }
 
+    @DynamoDBAttribute(attributeName = "EpisodeNumber")
     public Integer getEpisodeNumber() {
         return episodeNumber;
     }
@@ -69,6 +68,7 @@ public class Episode {
         this.episodeNumber = episodeNumber;
     }
 
+    @DynamoDBAttribute(attributeName = "SeasonNumber")
     public Integer getSeasonNumber() {
         return seasonNumber;
     }
@@ -77,6 +77,25 @@ public class Episode {
         this.seasonNumber = seasonNumber;
     }
 
+    @DynamoDBAttribute(attributeName = "SeasonID")
+    public String getSeasonID() {
+        return seasonID;
+    }
+
+    public void setSeasonID(String seasonID) {
+        this.seasonID = seasonID;
+    }
+
+    @DynamoDBAttribute(attributeName = "SeriesID")
+    public String getSeriesID() {
+        return seriesID;
+    }
+
+    public void setSeriesID(String seriesID) {
+        this.seriesID = seriesID;
+    }
+
+    @DynamoDBAttribute(attributeName = "OverviewEN")
     public String getOverview_en() {
         return overview_en;
     }
@@ -85,6 +104,7 @@ public class Episode {
         this.overview_en = overview_en;
     }
 
+    @DynamoDBAttribute(attributeName = "OverviewPT")
     public String getOverview_pt() {
         return overview_pt;
     }
@@ -93,30 +113,34 @@ public class Episode {
         this.overview_pt = overview_pt;
     }
 
-    public List<CastAndCrew> getGuestStars() {
+    @DynamoDBAttribute(attributeName = "GuestStars")
+    public Set<String> getGuestStars() {
         return guestStars;
     }
 
-    public void setGuestStars(List<CastAndCrew> guestStars) {
+    public void setGuestStars(Set<String> guestStars) {
         this.guestStars = guestStars;
     }
 
-    public List<CastAndCrew> getDirectors() {
+    @DynamoDBAttribute(attributeName = "Directors")
+    public Set<String> getDirectors() {
         return directors;
     }
 
-    public void setDirectors(List<CastAndCrew> directors) {
+    public void setDirectors(Set<String> directors) {
         this.directors = directors;
     }
 
-    public List<CastAndCrew> getWriters() {
+    @DynamoDBAttribute(attributeName = "Writers")
+    public Set<String> getWriters() {
         return writers;
     }
 
-    public void setWriters(List<CastAndCrew> writers) {
+    public void setWriters(Set<String> writers) {
         this.writers = writers;
     }
 
+    @DynamoDBAttribute(attributeName = "FirstAired")
     public Date getFirstAired() {
         return firstAired;
     }

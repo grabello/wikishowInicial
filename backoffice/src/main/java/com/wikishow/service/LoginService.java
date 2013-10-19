@@ -19,18 +19,22 @@ public class LoginService {
     @Autowired
     PersonRepository personRepository;
 
-    public PersonVO saveLogin(String email, String refreshToken, String accessToken, String type) {
-        Person person = person = personRepository.findByEmail(email);
+    public PersonVO saveLogin(String email, String name, String refreshToken, String accessToken, String type) {
+        Person person = personRepository.findByEmail(email);
         if (person == null) {
             person = new Person();
             person.setId(personRepository.getNextId());
             person.setEmail(email);
+            person.setName(name);
             person.setType(type);
         }
         person.setAccessToken(accessToken);
         person.setRefreshToken(refreshToken);
         personRepository.addPersonData(person);
         person = personRepository.findByEmail(email);
+
+        Person person1 = personRepository.findByName(name);
+
 
         if (person != null) {
             PersonVO personVO = new PersonVO(person.getId(), person.getEmail(), person.getRefreshToken(), person.getAccessToken(), 'G');

@@ -13,6 +13,7 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
+import org.xml.sax.SAXParseException;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -46,7 +47,8 @@ public class GetTVShowDataJob {
     public static final int ZIP_FILE = 4;
     private static final String ACCESS_KEY = "AKIAJTBPDH4NJDBK7YVQ";
     private static final String SECRET_KEY = "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";
-    private static final String PATH_TO_FILE = "/Users/macbookpro/Downloads/wikishow/";
+    private static final String PATH_TO_FILE = "/home/ec2-user/";
+    //    private static final String PATH_TO_FILE = "/Users/macbookpro/Downloads/wikishow/";
     @Autowired
     CastRepository castRepository;
     @Autowired
@@ -62,17 +64,20 @@ public class GetTVShowDataJob {
     @Autowired
     RoleRepository roleRepository;
     @Autowired
-    NewImageRepository newImageRepository;
+    GenreRepository genreRepository;
     private String xmlMirror = null;
     private String bannerMirror = null;
     private String zipMirror = null;
 
-    @Scheduled(cron = "*/30 * * * * *")
+    @Scheduled(cron = "* 30 * * * *")
     public void getTVShowData() throws IOException {
 
         URL mirrorUrl = new URL(GET_MIRROR_URL);
         URLConnection mirrorConnection = mirrorUrl.openConnection();
         Document mirror = parseXML(mirrorConnection.getInputStream());
+        if (mirror == null) {
+            return;
+        }
 
         NodeList mirrorNodeList = mirror.getElementsByTagName("Mirror");
 
@@ -111,26 +116,11 @@ public class GetTVShowDataJob {
             URL newShow = new URL(GET_SERIES + newTvShow.getName().replaceAll(" ", "%20"));
             URLConnection updateConnection = newShow.openConnection();
             Document newShowDocument = parseXML((updateConnection.getInputStream()));
+            if (newShowDocument == null) {
+                return;
+            }
             NodeList newShowsNodeList = newShowDocument.getElementsByTagName("Series");
 
-            if (newShowsNodeList.getLength() > 10) {
-                System.out.println("To many shows with the same name. Adding them to newTVShow List");
-                for (int i = 0; i < newShowsNodeList.getLength(); i++) {
-                    Node tvShowNode = newShowsNodeList.item(i);
-                    NodeList tvShowAttributes = tvShowNode.getChildNodes();
-                    for (int j = 0; j < tvShowAttributes.getLength(); j++) {
-                        Node node = tvShowAttributes.item(j);
-                        if (node.getNodeName().equals("seriesid")) {
-                            String url = GET_SERIES_UPDATE.replace("%xmlmirror%", xmlMirror). //
-                                    replace("%seriesid%", node.getTextContent()) //
-                                    .replace("%language%", "en");
-                            addSerie(node.getTextContent(), url);
-                        }
-                    }
-                }
-                newTVShowRepository.deleteNewTVShow(newTvShow);
-                break;
-            }
             for (int i = 0; i < newShowsNodeList.getLength(); i++) {
                 System.out.println("Found " + newShowsNodeList.getLength() + " tvShow=" + newTvShow.getName());
                 Node tvShowNode = newShowsNodeList.item(i);
@@ -166,16 +156,22 @@ public class GetTVShowDataJob {
             doc = objDocumentBuilder.parse(stream);
         } catch (ParserConfigurationException e) {
             e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+            return null;
+        } catch (SAXParseException e) {
+            e.printStackTrace();
+            return null;
         } catch (SAXException e) {
             e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+            return null;
         } catch (IOException e) {
             e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+            return null;
         }
 
         return doc;
     }
 
-    private void processSeries(String id, String url, String language) {
+    private void processSeries(String id, String url, String language) throws IOException {
         try {
             downloadZipFile(id, url, language);
             File folder = unzipFile(id, language);
@@ -185,20 +181,26 @@ public class GetTVShowDataJob {
                     File xml = files[i];
                     if (xml.getName().equals(language + ".xml")) {
                         Document tvShow = parseXML(new FileInputStream(xml));
-                        saveSeriesXML(tvShow, language);
-                        saveEpisodesXML(tvShow, language);
+                        if (tvShow != null) {
+                            String tvShowName = saveSeriesXML(tvShow, language);
+                            saveEpisodesXML(tvShow, language, tvShowName);
+                        }
                         while (!xml.delete()) ;
                     }
 
                     if (xml.getName().equals("actors.xml")) {
                         Document actors = parseXML(new FileInputStream(xml));
-                        saveActorsXML(actors, id);
+                        if (actors != null) {
+                            saveActorsXML(actors, id);
+                        }
                         while (!xml.delete()) ;
                     }
 
                     if (xml.getName().equals("banners.xml")) {
                         Document banners = parseXML(new FileInputStream(xml));
-                        saveBannersXML(banners, id, null, null, null);
+                        if (banners != null) {
+                            saveBannersXML(banners, id, null, null, null);
+                        }
                         while (!xml.delete()) ;
                     }
                 }
@@ -206,12 +208,12 @@ public class GetTVShowDataJob {
             }
 
         } catch (IOException e) {
-            System.err.println("m=processSeries,id=" + id + "url=" + url + "language=" + language);
+            System.err.println("m=processSeries,id=" + id + ",url=" + url + ",language=" + language + ",e=" + e);
         }
 
     }
 
-    private void saveSeriesXML(Document tvShow, String language) {
+    private String saveSeriesXML(Document tvShow, String language) {
 
         NodeList tvShowData = tvShow.getElementsByTagName("Series");
         SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
@@ -223,6 +225,9 @@ public class GetTVShowDataJob {
         String overview = null;
         Boolean isEnded = null;
         String[] actors = null;
+        String airsTime = null;
+        String[] genre = null;
+        Integer runTime = null;
         Node showData = tvShowData.item(0);
         NodeList attributes = showData.getChildNodes();
         for (int i = 0; i < attributes.getLength(); i++) {
@@ -250,10 +255,16 @@ public class GetTVShowDataJob {
                 isEnded = item.getTextContent().equals("Ended");
             } else if (item.getNodeName().equals("Actors")) {
                 actors = item.getTextContent().split("\\|");
+            } else if (item.getNodeName().equals("Airs_Time")) {
+                airsTime = item.getTextContent();
+            } else if (item.getNodeName().equals("Genre")) {
+                genre = item.getTextContent().split("\\|");
+            } else if (item.getNodeName().equals("Runtime")) {
+                runTime = Integer.valueOf(item.getTextContent());
             }
         }
 
-        tvShowEntity = tvShowRepository.findById(id);
+        tvShowEntity = tvShowRepository.findByTVShowName(tvShowName);
 
         if (tvShowEntity == null) {
             tvShowEntity = new TvShow();
@@ -270,67 +281,101 @@ public class GetTVShowDataJob {
                 tvShowEntity.setOverview_pt("Sinopse ainda não disponível!");
             }
             tvShowEntity.setCast(findCast(actors, "Actor"));
+            tvShowEntity.setGenre(findGenre(genre));
+            tvShowEntity.setAirsTime(airsTime);
+            tvShowEntity.setRunTime(runTime);
             tvShowRepository.addTVShowData(tvShowEntity);
         } else {
-            Map<String, Object> updateMap = new HashMap<String, Object>();
-
             if (tvShowEntity.getNetwork() == null || !tvShowEntity.getNetwork().equals(network)) {
-                updateMap.put("network", network);
+                tvShowEntity.setNetwork(network);
             }
 
             if (tvShowEntity.getFirstAired() == null || !tvShowEntity.getFirstAired().equals(firstAired)) {
-                updateMap.put("firstAired", firstAired);
+                tvShowEntity.setFirstAired(firstAired);
             }
 
             if (language.equals("pt")) {
                 if (tvShowEntity.getOverview_pt() == null || !tvShowEntity.getOverview_pt().equals(overview)) {
-                    updateMap.put("overview_pt", overview);
+                    tvShowEntity.setOverview_pt(overview);
                 }
             } else {
                 if (tvShowEntity.getOverview_en() == null || !tvShowEntity.getOverview_en().equals(overview)) {
-                    updateMap.put("overview_en", overview);
+                    tvShowEntity.setOverview_en(overview);
                 }
             }
 
-            if (tvShowEntity.getCast() == null || !checkCastList(tvShowEntity.getCast(), findCast(actors, "Actor"))) {
-                updateMap.put("cast", findCast(actors, "Actor"));
+            if (tvShowEntity.getCast() == null || !checkList(tvShowEntity.getCast(), findCast(actors, "Actor"))) {
+                tvShowEntity.setCast(findCast(actors, "Actor"));
             }
 
             if (tvShowEntity.getEnded() == null || tvShowEntity.getEnded() != isEnded) {
-                updateMap.put("isEnded", isEnded);
+                tvShowEntity.setEnded(isEnded);
             }
 
-            tvShowRepository.updateTVShow("id", id, updateMap);
+            if (tvShowEntity.getAirsTime() == null || !tvShowEntity.getAirsTime().equals(airsTime)) {
+                tvShowEntity.setAirsTime(airsTime);
+            }
+
+            if (tvShowEntity.getGenre() == null || !checkList(tvShowEntity.getGenre(), findGenre(genre))) {
+                tvShowEntity.setGenre(findGenre(genre));
+            }
+
+            if (tvShowEntity.getRunTime() == null || !tvShowEntity.getRunTime().equals(runTime)) {
+                tvShowEntity.setRunTime(runTime);
+            }
+
+            tvShowRepository.addTVShowData(tvShowEntity);
 
         }
+        return tvShowName;
     }
 
-    public List<CastAndCrew> findCast(String[] names, String type) {
-        List<CastAndCrew> actors = new ArrayList<CastAndCrew>();
+    public Set<String> findGenre(String[] genres) {
+        Set<String> genreSet = new HashSet<String>();
+        if (genres == null || genres.length == 0) {
+            return null;
+        }
+
+        for (String genre : genres) {
+            if (!genre.equals("") && !genre.equals(" ")) {
+                Genre genreEntity = genreRepository.findByGenre(genre);
+                if (genreEntity == null) {
+                    genreEntity = new Genre();
+                    genreEntity.setGenre(genre);
+                    genreRepository.addGenreData(genreEntity);
+                }
+                genreSet.add(genreEntity.getGenre());
+            }
+        }
+        return genreSet;
+    }
+
+    public Set<String> findCast(String[] names, String type) {
+        Set<String> actors = new HashSet<String>();
         if (names == null || names.length == 0) {
             return null;
         }
 
         for (String name : names) {
-            if (name.equals("") || name.equals(" ")) {
-                break;
-            }
-            CastAndCrew actor = castRepository.findByName(name);
-            if (actor == null) {
-                actor = new CastAndCrew();
-                actor.setName(name);
-                actor.setType(type);
-                castRepository.addCastData(actor);
-            } else {
-                if (!actor.getType().contains(type)) {
-                    String newType = actor.getType() + "|" + type;
-                    actor.setType(newType);
-                    Map<String, Object> updateMap = new HashMap<String, Object>();
-                    updateMap.put("type", newType);
-                    castRepository.updateCast("name", name, updateMap);
+            if (!name.equals("") && !name.equals(" ")) {
+
+                CastAndCrew actor = castRepository.findByName(name);
+                if (actor == null) {
+                    actor = new CastAndCrew();
+                    actor.setName(name);
+                    actor.setType(type);
+                } else {
+                    if (!actor.getType().contains(type)) {
+                        String newType = actor.getType() + "|" + type;
+                        actor.setType(newType);
+                    }
                 }
+                castRepository.addCastData(actor);
+                actors.add(actor.getName());
             }
-            actors.add(actor);
+        }
+        if (actors.isEmpty()) {
+            return null;
         }
         return actors;
     }
@@ -467,6 +512,12 @@ public class GetTVShowDataJob {
             return null;
         }
 
+        if (bannerMirror == null || bannerMirror.isEmpty()) {
+            System.err.println("*********************************************************");
+            System.err.println("Sem bannerMirror. Provavelmente erro feio em algum lugar.");
+            System.err.println("*********************************************************");
+            return null;
+        }
         URL image = new URL(bannerMirror + "/banners/" + path);
         URLConnection connection = image.openConnection();
         InputStream in = connection.getInputStream();
@@ -511,7 +562,7 @@ public class GetTVShowDataJob {
             }
 
             CastAndCrew actorEntity = castRepository.findByName(name);
-            Role roleEntity = roleRepository.findByRoleAndSeriesId(role, seriesId);
+            Role roleEntity = roleRepository.findByRoleAndName(role, name);
             File imageFile;
 
             if (imageURL != null && !imageURL.isEmpty()) {
@@ -545,48 +596,37 @@ public class GetTVShowDataJob {
                 }
             }
 
-            if (roleEntity == null) {
-                roleEntity = new Role();
-                roleEntity.setId(id);
-                roleEntity.setRole(role);
-                roleEntity.setTvShowId(seriesId);
-                roleRepository.addRole(roleEntity);
-                roleEntity = roleRepository.findByRoleAndSeriesId(role, seriesId);
-            }
-
             if (actorEntity == null) {
                 actorEntity = new CastAndCrew();
                 actorEntity.setType("Actor");
                 actorEntity.setName(name);
-                List<Role> roleList = new ArrayList<Role>();
-                roleList.add(roleEntity);
-                actorEntity.setRole(roleList);
                 castRepository.addCastData(actorEntity);
             } else {
-                Map<String, Object> updateMap = new HashMap<String, Object>();
-                List<Role> roleList = actorEntity.getRole();
-
-                if (actorEntity.getRole() != null && !hasRole(roleList, roleEntity)) {
-                    roleList.add(roleEntity);
-                    actorEntity.setRole(roleList);
-                    updateMap.put("role", roleList);
-                } else if (actorEntity.getRole() == null) {
-                    roleList = new ArrayList<Role>();
-                    roleList.add(roleEntity);
-                    actorEntity.setRole(roleList);
-                    updateMap.put("role", roleList);
-                }
-
                 if (actorEntity.getType() != null && !actorEntity.getType().contains("Actor")) {
                     String type = actorEntity.getType() + "|Actor";
                     actorEntity.setType(type);
-                    updateMap.put("type", type);
+                    castRepository.addCastData(actorEntity);
                 } else if (actorEntity.getType() == null) {
                     String type = "Actor";
                     actorEntity.setType(type);
-                    updateMap.put("type", type);
+                    castRepository.addCastData(actorEntity);
                 }
-                castRepository.updateCast("name", name, updateMap);
+            }
+            actorEntity = castRepository.findByName(name);
+
+            if (roleEntity == null && actorEntity != null) {
+                roleEntity = new Role();
+                roleEntity.setId(id);
+                if (role == null || role.isEmpty()) {
+                    role = "AddicTV";
+                }
+                if (name == null || name.isEmpty()) {
+                    name = "AddicTV";
+                }
+                roleEntity.setRole(role);
+                roleEntity.setTvShowId(seriesId);
+                roleEntity.setCastName(actorEntity.getName());
+                roleRepository.addRole(roleEntity);
             }
         }
     }
@@ -600,7 +640,7 @@ public class GetTVShowDataJob {
         return false;
     }
 
-    private void saveEpisodesXML(Document episodes, String language) throws IOException {
+    private void saveEpisodesXML(Document episodes, String language, String tvShowName) throws IOException {
         NodeList episodeNodeList = episodes.getElementsByTagName("Episode");
 
         for (int i = 0; i < episodeNodeList.getLength(); i++) {
@@ -658,7 +698,7 @@ public class GetTVShowDataJob {
 
             System.out.println("S" + seasonNumber + "E" + episodeNumber + " - EpisodeName=" + name);
 
-            TvShow tvShowEntity = tvShowRepository.findById(seriesId);
+            TvShow tvShowEntity = tvShowRepository.findByTVShowName(tvShowName);
             Season seasonEntity = seasonRepository.findById(seasonId);
             Episode episodeEntity = episodeRepository.findById(id);
 
@@ -671,24 +711,26 @@ public class GetTVShowDataJob {
                 seasonEntity.setId(seasonId);
                 seasonEntity.setDateFirst(firstAired);
                 seasonEntity.setDateLast(firstAired);
+                seasonEntity.setSeriesID(seriesId);
                 seasonEntity.setSeasonNumber(seasonNumber);
                 seasonRepository.addSeasonData(seasonEntity);
-                List<Season> seasons = tvShowEntity.getSeasons();
+                Set<String> seasons = tvShowEntity.getSeasons();
                 if (seasons != null) {
-                    seasons.add(seasonEntity);
+                    seasons.add(seasonEntity.getId());
                 } else {
-                    seasons = new ArrayList<Season>();
-                    seasons.add(seasonEntity);
+                    seasons = new HashSet<String>();
+                    seasons.add(seasonEntity.getId());
                 }
-                Map<String, Object> updateMap = new HashMap<String, Object>();
-                updateMap.put("seasons", seasons);
-                tvShowRepository.updateTVShow("id", seriesId, updateMap);
+                tvShowEntity.setSeasons(seasons);
+                tvShowRepository.addTVShowData(tvShowEntity);
             }
 
             if (episodeEntity == null) {
                 episodeEntity = new Episode();
                 episodeEntity.setId(id);
                 episodeEntity.setEpisodeNumber(episodeNumber);
+                episodeEntity.setSeriesID(seriesId);
+                episodeEntity.setSeasonID(seasonId);
                 episodeEntity.setSeasonNumber(seasonNumber);
                 episodeEntity.setFirstAired(firstAired);
                 episodeEntity.setDirectors(findCast(directors, "Director"));
@@ -704,74 +746,74 @@ public class GetTVShowDataJob {
                     episodeEntity.setOverview_pt("Overview não definido");
                 }
                 episodeRepository.addEpisodeData(episodeEntity);
-                List<Episode> episodeList = seasonEntity.getEpisodes();
-                Map<String, Object> updateMap = new HashMap<String, Object>();
+                Set<String> episodeList = seasonEntity.getEpisodes();
                 if (episodeList != null) {
-                    episodeList.add(episodeEntity);
+                    episodeList.add(episodeEntity.getId());
+                    seasonEntity.setEpisodes(episodeList);
                     if (firstAired != null) {
                         if (seasonEntity.getDateFirst() == null || !seasonEntity.getDateFirst().before(firstAired)) {
-                            updateMap.put("dateFirst", firstAired);
+                            seasonEntity.setDateFirst(firstAired);
                         } else if (seasonEntity.getDateLast() == null || !seasonEntity.getDateLast().after(firstAired)) {
-                            updateMap.put("dateLast", firstAired);
+                            seasonEntity.setDateLast(firstAired);
                         }
                     }
                 } else {
-                    episodeList = new ArrayList<Episode>();
-                    episodeList.add(episodeEntity);
+                    episodeList = new HashSet<String>();
+                    episodeList.add(episodeEntity.getId());
+                    seasonEntity.setEpisodes(episodeList);
                 }
 
-                updateMap.put("episodes", episodeList);
-                seasonRepository.updateSeason("id", seasonId, updateMap);
+                seasonRepository.addSeasonData(seasonEntity);
             } else {
-                Map<String, Object> updateMap = new HashMap<String, Object>();
 
                 if (episodeEntity.getEpisodeNumber() == null || !episodeEntity.getEpisodeNumber().equals(episodeNumber)) {
-                    updateMap.put("episodeNumber", episodeNumber);
+                    episodeEntity.setEpisodeNumber(episodeNumber);
                 }
 
                 if (episodeEntity.getSeasonNumber() == null || !episodeEntity.getSeasonNumber().equals(seasonNumber)) {
-                    updateMap.put("seasonNumber", seasonNumber);
+                    episodeEntity.setSeasonNumber(seasonNumber);
+                    episodeEntity.setSeasonID(seasonId);
                 }
 
                 if (episodeEntity.getFirstAired() == null || !episodeEntity.getFirstAired().equals(firstAired)) {
-                    updateMap.put("firstAired", firstAired);
+                    episodeEntity.setFirstAired(firstAired);
                 }
 
-                if (!checkCastList(episodeEntity.getDirectors(), findCast(directors, "Director"))) {
-                    updateMap.put("directors", findCast(directors, "Director"));
+                if (!checkList(episodeEntity.getDirectors(), findCast(directors, "Director"))) {
+                    episodeEntity.setDirectors(findCast(directors, "Director"));
                 }
 
-                if (!checkCastList(episodeEntity.getGuestStars(), findCast(guestStars, "Actor"))) {
-                    updateMap.put("guestStars", findCast(guestStars, "Actor"));
+                if (!checkList(episodeEntity.getGuestStars(), findCast(guestStars, "Actor"))) {
+                    episodeEntity.setGuestStars(findCast(guestStars, "Actor"));
                 }
 
-                if (!checkCastList(episodeEntity.getWriters(), findCast(writers, "Writer"))) {
-                    updateMap.put("writers", findCast(guestStars, "Writer"));
+                if (!checkList(episodeEntity.getWriters(), findCast(writers, "Writer"))) {
+                    episodeEntity.setWriters(findCast(writers, "Writer"));
                 }
 
                 if (language.equals("pt")) {
                     if (episodeEntity.getOverview_pt() == null || !episodeEntity.getOverview_pt().equals(overview)) {
-                        updateMap.put("overview_pt", overview);
+                        episodeEntity.setOverview_pt(overview);
                     }
                     if (episodeEntity.getName_pt() == null || !episodeEntity.getName_pt().equals(name)) {
-                        updateMap.put("name_pt", name);
+                        episodeEntity.setName_pt(name);
                     }
                 } else {
                     if (episodeEntity.getOverview_en() == null || !episodeEntity.getOverview_en().equals(overview)) {
-                        updateMap.put("overview_en", overview);
+                        episodeEntity.setOverview_en(overview);
                     }
                     if (episodeEntity.getName_en() == null || !episodeEntity.getName_en().equals(name)) {
-                        updateMap.put("name_en", name);
+                        episodeEntity.setName_en(name);
                     }
                 }
-                episodeRepository.updateEpisode("id", episodeEntity.getId(), updateMap);
+                episodeRepository.addEpisodeData(episodeEntity);
             }
 
         }
 
     }
 
-    public boolean checkCastList(List<CastAndCrew> firstList, List<CastAndCrew> secondList) {
+    public boolean checkList(Set<String> firstList, Set<String> secondList) {
         int secondInt = 0;
         if (firstList == null) {
             if (secondList == null) {
@@ -785,9 +827,9 @@ public class GetTVShowDataJob {
             }
         }
 
-        for (CastAndCrew first : firstList) {
-            for (CastAndCrew second : secondList) {
-                if (first.getName().equals(second.getName())) {
+        for (String first : firstList) {
+            for (String second : secondList) {
+                if (first.equals(second)) {
                     secondInt++;
                     break;
                 }
@@ -904,12 +946,9 @@ public class GetTVShowDataJob {
             Node item = attributes.item(i);
             if (item.getNodeName().equals("SeriesName")) {
                 if (!item.getTextContent().isEmpty()) {
-                    List<NewTVShow> list = newTVShowRepository.findByName(item.getTextContent());
-                    if (list == null || list.isEmpty()) {
-                        System.out.println("Adding " + item.getTextContent() + " to newTVShow");
-                        newTVShow.setName(item.getTextContent());
-                        newTVShowRepository.addNewTVShowData(newTVShow);
-                    }
+                    System.out.println("Adding " + item.getTextContent() + " to newTVShow");
+                    newTVShow.setName(item.getTextContent());
+                    newTVShowRepository.addNewTVShowData(newTVShow);
                     break;
                 }
             }
@@ -917,4 +956,27 @@ public class GetTVShowDataJob {
 
     }
 
+    public String getXmlMirror() {
+        return xmlMirror;
+    }
+
+    public void setXmlMirror(String xmlMirror) {
+        this.xmlMirror = xmlMirror;
+    }
+
+    public String getBannerMirror() {
+        return bannerMirror;
+    }
+
+    public void setBannerMirror(String bannerMirror) {
+        this.bannerMirror = bannerMirror;
+    }
+
+    public String getZipMirror() {
+        return zipMirror;
+    }
+
+    public void setZipMirror(String zipMirror) {
+        this.zipMirror = zipMirror;
+    }
 }

@@ -1,13 +1,12 @@
 package com.wikishow.repository;
 
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBScanExpression;
+import com.amazonaws.services.dynamodbv2.model.AttributeValue;
+import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
+import com.amazonaws.services.dynamodbv2.model.Condition;
 import com.wikishow.entity.NewTVShow;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.query.Criteria;
-import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Repository;
 
-import java.math.BigInteger;
 import java.util.List;
 
 /**
@@ -19,35 +18,46 @@ import java.util.List;
  */
 
 @Repository
-public class NewTVShowRepository {
-    public static final String COLLECTION_NAME = "newTVShow";
-    @Autowired
-    private MongoTemplate mongoTemplate;
+public class NewTVShowRepository extends DefaultRepository {
 
     public void addNewTVShowData(NewTVShow newTVShowEntity) {
-        if (!mongoTemplate.collectionExists(NewTVShow.class)) {
-            mongoTemplate.createCollection(NewTVShow.class);
+        if (findByName(newTVShowEntity.getName()) == null) {
+            mapper.save(newTVShowEntity);
         }
-        mongoTemplate.insert(newTVShowEntity, COLLECTION_NAME);
     }
 
     public List<NewTVShow> listAllNewTVShow() {
-        return mongoTemplate.findAll(NewTVShow.class, COLLECTION_NAME);
+        getMapper();
+        DynamoDBScanExpression scanExpression = new DynamoDBScanExpression();
+        scanExpression.addFilterCondition("Name",
+                new Condition()
+                        .withComparisonOperator(ComparisonOperator.NOT_NULL));
+        List<NewTVShow> scanResult = mapper.scan(NewTVShow.class, scanExpression);
+
+        if (scanResult == null || scanResult.size() == 0) {
+            return null;
+        }
+
+        return scanResult;
     }
 
-    public NewTVShow findById(BigInteger id) {
-        return mongoTemplate.findById(id, NewTVShow.class, COLLECTION_NAME);
-    }
-
-    public List<NewTVShow> findByName(String name) {
-        Query query = new Query();
-        query.addCriteria(Criteria.where("name").is(name));
-
-        return mongoTemplate.find(query, NewTVShow.class, COLLECTION_NAME);
+    public NewTVShow findByName(String id) {
+        getMapper();
+        return mapper.load(NewTVShow.class, id);
     }
 
     public void deleteNewTVShow(NewTVShow newTVShowEntity) {
-        mongoTemplate.remove(newTVShowEntity, COLLECTION_NAME);
+        getMapper();
+        mapper.delete(newTVShowEntity);
+    }
+
+    public int countNewTVShow() {
+        getMapper();
+        DynamoDBScanExpression scanExpression = new DynamoDBScanExpression();
+        scanExpression.addFilterCondition("Name",
+                new Condition()
+                        .withComparisonOperator(ComparisonOperator.NOT_NULL));
+        return mapper.count(NewTVShow.class, scanExpression);
     }
 
 }

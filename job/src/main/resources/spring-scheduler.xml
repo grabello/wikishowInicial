@@ -8,8 +8,11 @@
 			http://www.springframework.org/schema/task/spring-task-3.0.xsd">
 
     <!-- Activates @Scheduled and @Async annotations for scheduling -->
-    <task:annotation-driven/>
+    <task:annotation-driven executor="myExecutor" scheduler="myScheduler"/>
 
+    <task:executor id="myExecutor" pool-size="5"/>
+
+    <task:scheduler id="myScheduler" pool-size="10"/>
 
     <!-- Defines a ThreadPoolTaskScheduler instance with configurable pool size.
             The id becomes the default thread name prefix. -->

@@ -1,13 +1,12 @@
 package com.wikishow.entity;
 
-import com.wikishow.repository.EpisodeRepository;
-import com.wikishow.repository.SeasonRepository;
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.mapping.DBRef;
-import org.springframework.data.mongodb.core.mapping.Document;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIndexRangeKey;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 
 import java.util.Date;
-import java.util.List;
+import java.util.Set;
 
 /**
  * Created with IntelliJ IDEA.
@@ -16,17 +15,17 @@ import java.util.List;
  * Time: 11:50 AM
  * To change this template use File | Settings | File Templates.
  */
-@Document
+@DynamoDBTable(tableName = "Season")
 public class Season {
 
-    @Id
     private String id;
     private Integer seasonNumber;
     private Date dateFirst;
     private Date dateLast;
-    @DBRef
-    private List<Episode> episodes;
+    private String seriesID;
+    private Set<String> episodes;
 
+    @DynamoDBHashKey(attributeName = "Id")
     public String getId() {
         return id;
     }
@@ -35,6 +34,7 @@ public class Season {
         this.id = id;
     }
 
+    @DynamoDBAttribute(attributeName = "SeasonNumber")
     public Integer getSeasonNumber() {
         return seasonNumber;
     }
@@ -43,6 +43,7 @@ public class Season {
         this.seasonNumber = seasonNumber;
     }
 
+    @DynamoDBAttribute(attributeName = "DateBegin")
     public Date getDateFirst() {
         return dateFirst;
     }
@@ -51,6 +52,7 @@ public class Season {
         this.dateFirst = dateFirst;
     }
 
+    @DynamoDBAttribute(attributeName = "DateEnd")
     public Date getDateLast() {
         return dateLast;
     }
@@ -59,11 +61,21 @@ public class Season {
         this.dateLast = dateLast;
     }
 
-    public List<Episode> getEpisodes() {
+    @DynamoDBAttribute(attributeName = "Episodes")
+    public Set<String> getEpisodes() {
         return episodes;
     }
 
-    public void setEpisodes(List<Episode> episodes) {
+    public void setEpisodes(Set<String> episodes) {
         this.episodes = episodes;
+    }
+
+    @DynamoDBIndexRangeKey(attributeName = "SeriesID")
+    public String getSeriesID() {
+        return seriesID;
+    }
+
+    public void setSeriesID(String seriesID) {
+        this.seriesID = seriesID;
     }
 }

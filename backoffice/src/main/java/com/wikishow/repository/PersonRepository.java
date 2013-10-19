@@ -1,9 +1,6 @@
 package com.wikishow.repository;
 
-import com.amazonaws.auth.AWSCredentials;
-import com.amazonaws.auth.BasicAWSCredentials;
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBScanExpression;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
@@ -21,7 +18,7 @@ import java.util.List;
  * To change this template use File | Settings | File Templates.
  */
 @Repository
-public class PersonRepository extends DefaultRepository{
+public class PersonRepository extends DefaultRepository {
 
     private static final Integer MIN = 1;
     private static final Integer MAX = 999999;
@@ -33,23 +30,40 @@ public class PersonRepository extends DefaultRepository{
 
     public Person findById(Integer id) {
         getMapper();
-        return mapper.load(Person.class, id);
-    }
-
-    //
-    public Person findByEmail(String email) {
-        getMapper();
         DynamoDBScanExpression scanExpression = new DynamoDBScanExpression();
-        scanExpression.addFilterCondition("Email",
+        scanExpression.addFilterCondition("Id",
                 new Condition()
                         .withComparisonOperator(ComparisonOperator.EQ)
-                        .withAttributeValueList(new AttributeValue().withS(email)));
+                        .withAttributeValueList(new AttributeValue().withN(id.toString())));
         List<Person> scanResult = mapper.scan(Person.class, scanExpression);
 
         if (scanResult == null || scanResult.size() == 0) {
             return null;
         }
+        return scanResult.get(0);
+    }
 
+    public Person findByEmail(String email) {
+        getMapper();
+        if (email == null) {
+            return null;
+        }
+        return mapper.load(Person.class, email);
+
+    }
+
+    public Person findByName(String name) {
+        getMapper();
+        DynamoDBScanExpression scanExpression = new DynamoDBScanExpression();
+        scanExpression.addFilterCondition("Name",
+                new Condition()
+                        .withComparisonOperator(ComparisonOperator.EQ)
+                        .withAttributeValueList(new AttributeValue().withS(name)));
+        List<Person> scanResult = mapper.scan(Person.class, scanExpression);
+
+        if (scanResult == null || scanResult.size() == 0) {
+            return null;
+        }
         return scanResult.get(0);
     }
 

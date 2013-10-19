@@ -21,7 +21,25 @@
     <!-- Loads Spring Task Scheduler related configurations -->
     <!--<import resource="mongodb.xml"/>-->
     <import resource="spring-scheduler.xml"/>
-    <import resource="classpath*:**/databaseContext.xml" />
+    <import resource="classpath*:**/databaseContext.xml"/>
+
+    <bean id="mailSender" class="org.springframework.mail.javamail.JavaMailSenderImpl">
+        <property name="host" value="smtps.uol.com.br"/>
+        <property name="port" value="587"/>
+        <property name="username" value="gnrabello@uol.com.br"/>
+        <property name="password" value="nunu3108"/>
+        <property name="javaMailProperties">
+            <props>
+                <!-- Use SMTP transport protocol -->
+                <prop key="mail.transport.protocol">smtp</prop>
+                <!-- Use SMTP-AUTH to authenticate to SMTP server -->
+                <prop key="mail.smtp.auth">true</prop>
+                <!-- Use TLS to encrypt communication with SMTP server -->
+                <prop key="mail.smtp.starttls.enable">true</prop>
+                <prop key="mail.debug">true</prop>
+            </props>
+        </property>
+    </bean>
 
 
 </beans>

@@ -4,6 +4,8 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 
+import java.util.Date;
+
 /**
  * Created with IntelliJ IDEA.
  * User: macbookpro
@@ -17,6 +19,7 @@ public class TVDBData {
     private String id;
     private String lastUpdateTime;
     private String mirror;
+    private Date lastUpdate;
 
     @DynamoDBHashKey(attributeName = "Id")
     public String getId() {
@@ -43,5 +46,14 @@ public class TVDBData {
 
     public void setMirror(String mirror) {
         this.mirror = mirror;
+    }
+
+    @DynamoDBAttribute(attributeName = "LastUpdate")
+    public Date getLastUpdate() {
+        return lastUpdate;
+    }
+
+    public void setLastUpdate(Date lastUpdate) {
+        this.lastUpdate = lastUpdate;
     }
 }

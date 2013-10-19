@@ -141,9 +141,9 @@ public class GoogleLoginController {
 
         PersonVO personVO = null;
         try {
-            personVO = loginService.saveLogin((String) jsonObject.get("email"), accessTokenResponse.refreshToken, accessTokenResponse.accessToken, LoginType.GOOGLE.getType());
+            personVO = loginService.saveLogin((String) jsonObject.get("email"), (String) jsonObject.get("name"), accessTokenResponse.refreshToken, accessTokenResponse.accessToken, LoginType.GOOGLE.getType());
         } catch (JSONException e) {
-            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+            e.printStackTrace();
         }
 
         if (personVO != null) {

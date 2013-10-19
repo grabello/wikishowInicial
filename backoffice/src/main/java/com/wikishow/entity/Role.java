@@ -1,10 +1,6 @@
 package com.wikishow.entity;
 
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.index.Indexed;
-import org.springframework.data.mongodb.core.mapping.Document;
-
-import java.math.BigInteger;
+import com.amazonaws.services.dynamodbv2.datamodeling.*;
 
 /**
  * Created with IntelliJ IDEA.
@@ -13,15 +9,15 @@ import java.math.BigInteger;
  * Time: 9:17 PM
  * To change this template use File | Settings | File Templates.
  */
-@Document
+@DynamoDBTable(tableName = "Role")
 public class Role {
 
-    @Id
     private String id;
-    @Indexed
     private String role;
+    private String castName;
     private String tvShowId;
 
+    @DynamoDBAttribute(attributeName = "Id")
     public String getId() {
         return id;
     }
@@ -30,6 +26,16 @@ public class Role {
         this.id = id;
     }
 
+    @DynamoDBRangeKey(attributeName = "CastName")
+    public String getCastName() {
+        return castName;
+    }
+
+    public void setCastName(String castName) {
+        this.castName = castName;
+    }
+
+    @DynamoDBHashKey(attributeName = "Role")
     public String getRole() {
         return role;
     }
@@ -38,6 +44,7 @@ public class Role {
         this.role = role;
     }
 
+    @DynamoDBIndexRangeKey(attributeName = "TVShowID", localSecondaryIndexName = "TVShowIDIndex")
     public String getTvShowId() {
         return tvShowId;
     }

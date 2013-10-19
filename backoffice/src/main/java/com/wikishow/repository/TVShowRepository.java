@@ -1,17 +1,13 @@
 package com.wikishow.repository;
 
-import com.mongodb.WriteConcern;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBScanExpression;
+import com.amazonaws.services.dynamodbv2.model.AttributeValue;
+import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
+import com.amazonaws.services.dynamodbv2.model.Condition;
 import com.wikishow.entity.TvShow;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.query.Criteria;
-import org.springframework.data.mongodb.core.query.Query;
-import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 /**
  * Created with IntelliJ IDEA.
@@ -21,59 +17,48 @@ import java.util.Set;
  * To change this template use File | Settings | File Templates.
  */
 @Repository
-public class TVShowRepository {
-
-    public static final String COLLECTION_NAME = "tvShow";
-    @Autowired
-    private MongoTemplate mongoTemplate;
+public class TVShowRepository extends DefaultRepository {
 
     public void addTVShowData(TvShow tvShowEntity) {
-        if (!mongoTemplate.collectionExists(TvShow.class)) {
-            mongoTemplate.createCollection(TvShow.class);
-        }
-        mongoTemplate.insert(tvShowEntity, COLLECTION_NAME);
-    }
-
-    public List<TvShow> listAllEpisodes() {
-        return mongoTemplate.findAll(TvShow.class, COLLECTION_NAME);
+        getMapper();
+        mapper.save(tvShowEntity);
     }
 
     public TvShow findById(String id) {
-        if (id == null) {
+        getMapper();
+        DynamoDBScanExpression scanExpression = new DynamoDBScanExpression();
+        scanExpression.addFilterCondition("Id",
+                new Condition()
+                        .withComparisonOperator(ComparisonOperator.EQ)
+                        .withAttributeValueList(new AttributeValue().withS(id)));
+        List<TvShow> scanResult = mapper.scan(TvShow.class, scanExpression);
+
+        if (scanResult == null || scanResult.size() == 0) {
             return null;
         }
-        return mongoTemplate.findById(id, TvShow.class, COLLECTION_NAME);
+        return scanResult.get(0);
     }
 
-    public void deleteTVShow(TvShow TvShow) {
-        mongoTemplate.remove(TvShow, COLLECTION_NAME);
-    }
-
-    public void updateTVShow(String field, String value, Map<String, Object> updateMap) {
-        Query query = new Query();
-        query.addCriteria(Criteria.where(field).is(value));
-        query.fields().include(field);
-        System.out.println("Updating TVShow " + field + "=" + value);
-        Update update = new Update();
-        if (updateMap != null) {
-            Set<String> fields = updateMap.keySet();
-            if (fields != null && !fields.isEmpty()) {
-                for (String updateField : fields) {
-                    System.out.println(updateField + "=" + updateMap.get(updateField));
-                    update.set(updateField, updateMap.get(updateField));
-                }
-            } else {
-                return;
-            }
-        } else {
-            return;
+    public TvShow findByTVShowName(String tvShowName) {
+        getMapper();
+        if (tvShowName == null) {
+            return null;
         }
-        mongoTemplate.setWriteConcern(WriteConcern.ERRORS_IGNORED);
-        try {
-            mongoTemplate.updateFirst(query, update, TvShow.class, COLLECTION_NAME);
-        } catch (ClassCastException e) {
-            System.err.println("Failed to update tvshow " + field + "=" + value);
-
-        }
+        return mapper.load(TvShow.class, tvShowName);
     }
+
+    public int countTVShow() {
+        getMapper();
+        DynamoDBScanExpression scanExpression = new DynamoDBScanExpression();
+        scanExpression.addFilterCondition("TVShowName",
+                new Condition()
+                        .withComparisonOperator(ComparisonOperator.NOT_NULL));
+         return mapper.count(TvShow.class, scanExpression);
+    }
+
+    public void deleteTVShow(TvShow tvShow) {
+        getMapper();
+        mapper.delete(tvShow);
+    }
+
 }

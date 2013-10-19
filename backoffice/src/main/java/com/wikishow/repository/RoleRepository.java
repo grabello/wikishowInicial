@@ -1,13 +1,13 @@
 package com.wikishow.repository;
 
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBScanExpression;
+import com.amazonaws.services.dynamodbv2.model.AttributeValue;
+import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
+import com.amazonaws.services.dynamodbv2.model.Condition;
 import com.wikishow.entity.Role;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.query.Criteria;
-import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Repository;
 
-import java.math.BigInteger;
 import java.util.List;
 
 /**
@@ -18,37 +18,103 @@ import java.util.List;
  * To change this template use File | Settings | File Templates.
  */
 @Repository
-public class RoleRepository {
-
-    public static final String COLLECTION_NAME = "role";
-    @Autowired
-    private MongoTemplate mongoTemplate;
+public class RoleRepository extends DefaultRepository {
 
     public void addRole(Role role) {
-        if (!mongoTemplate.collectionExists(Role.class)) {
-            mongoTemplate.createCollection(Role.class);
-        }
-        mongoTemplate.insert(role, COLLECTION_NAME);
+        getMapper();
+        mapper.save(role);
     }
 
     public List<Role> listRoleBySeriesId(String seriesId) {
-        Query query = new Query();
-        query.addCriteria(Criteria.where("tvShowId").is(seriesId));
+        getMapper();
+        Condition rangeKeyCondition = new Condition()
+                .withComparisonOperator(ComparisonOperator.EQ.toString())
+                .withAttributeValueList(new AttributeValue().withS(seriesId));
 
-        return mongoTemplate.find(query, Role.class, COLLECTION_NAME);
+        DynamoDBScanExpression scanExpression = new DynamoDBScanExpression();
+        scanExpression.addFilterCondition("TVShowID", rangeKeyCondition);
+
+        List<Role> scanResult = mapper.scan(Role.class, scanExpression);
+
+        if (scanResult == null || scanResult.size() == 0) {
+            return null;
+        }
+        return scanResult;
     }
 
     public Role findByRoleAndSeriesId(String role, String seriesId) {
-        Query query = new Query();
-        query.addCriteria(Criteria.where("role").is(role));
-        query.addCriteria(Criteria.where("tvShowId").is(seriesId));
+        getMapper();
+        Condition roleRangeKeyCondition = new Condition()
+                .withComparisonOperator(ComparisonOperator.EQ.toString())
+                .withAttributeValueList(new AttributeValue().withS(role));
 
-        List<Role> roleList = mongoTemplate.find(query, Role.class, COLLECTION_NAME);
-        return roleList != null && roleList.size() > 0 ? roleList.get(0) : null;
+        Condition seriesIDRangeKeyCondition = new Condition()
+                .withComparisonOperator(ComparisonOperator.EQ.toString())
+                .withAttributeValueList(new AttributeValue().withS(seriesId));
+
+        DynamoDBScanExpression scanExpression = new DynamoDBScanExpression();
+        scanExpression.addFilterCondition("TVShowID", seriesIDRangeKeyCondition);
+        scanExpression.addFilterCondition("Role", roleRangeKeyCondition);
+
+        List<Role> scanResult = mapper.scan(Role.class, scanExpression);
+
+        if (scanResult == null || scanResult.size() == 0) {
+            return null;
+        }
+        return scanResult.get(0);
     }
 
-    public Role findById(BigInteger id) {
-        return mongoTemplate.findById(id, Role.class, COLLECTION_NAME);
+    public Role findById(String id) {
+        getMapper();
+        Condition idCondition = new Condition()
+                .withComparisonOperator(ComparisonOperator.EQ.toString())
+                .withAttributeValueList(new AttributeValue().withS(id));
+
+        DynamoDBScanExpression scanExpression = new DynamoDBScanExpression();
+        scanExpression.addFilterCondition("Id", idCondition);
+        List<Role> scanResult = mapper.scan(Role.class, scanExpression);
+
+        if (scanResult == null || scanResult.isEmpty()) {
+            return null;
+        }
+
+        return scanResult.get(0);
+    }
+
+    public Role findByRoleAndName(String role, String name) {
+        getMapper();
+        if (role == null || role.isEmpty()) {
+            role = "AddicTV";
+        }
+
+        if (name == null || name.isEmpty()) {
+            name = "AddicTV";
+        }
+
+        Role roleEntity = new Role();
+        roleEntity.setRole(role);
+        Condition rangeKeyCondition = new Condition();
+        rangeKeyCondition.withComparisonOperator(ComparisonOperator.EQ)
+                .withAttributeValueList(new AttributeValue().withS(name));
+        DynamoDBQueryExpression<Role> queryExpression = new DynamoDBQueryExpression<Role>()
+                .withHashKeyValues(roleEntity)
+                .withRangeKeyCondition("CastName", rangeKeyCondition);
+
+        List<Role> roleList = mapper.query(Role.class, queryExpression);
+
+        if (roleList == null || roleList.isEmpty()) {
+            return null;
+        }
+
+        return roleList.get(0);
+    }
+
+    public List<Role> findByRole(String role) {
+        Role roleEntity = new Role();
+        roleEntity.setRole(role);
+        DynamoDBQueryExpression<Role> queryExpression = new DynamoDBQueryExpression<Role>().
+                withHashKeyValues(roleEntity);
+        return mapper.query(Role.class, queryExpression);
     }
 
 }
