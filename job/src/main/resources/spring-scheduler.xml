@@ -10,9 +10,9 @@
     <!-- Activates @Scheduled and @Async annotations for scheduling -->
     <task:annotation-driven executor="myExecutor" scheduler="myScheduler"/>
 
-    <task:executor id="myExecutor" pool-size="5"/>
+    <task:executor id="myExecutor" pool-size="2"/>
 
-    <task:scheduler id="myScheduler" pool-size="10"/>
+    <task:scheduler id="myScheduler" pool-size="2"/>
 
     <!-- Defines a ThreadPoolTaskScheduler instance with configurable pool size.
             The id becomes the default thread name prefix. -->

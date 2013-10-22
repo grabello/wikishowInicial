@@ -7,7 +7,10 @@ import com.amazonaws.services.dynamodbv2.model.Condition;
 import com.wikishow.entity.CastAndCrew;
 import org.springframework.stereotype.Repository;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Created with IntelliJ IDEA.
@@ -32,8 +35,25 @@ public class CastRepository extends DefaultRepository {
         mapper.delete(castEntity);
     }
 
+    public List<CastAndCrew> findByIds(Set<String> castNames) {
+        getMapper();
+        if (castNames == null || castNames.isEmpty()) {
+            return null;
+        }
+
+        System.out.println("Starting CastRepository.findByIds size=" + castNames.size());
+        List<CastAndCrew> scanResult = new ArrayList<CastAndCrew>();
+
+        for (String castName : castNames) {
+            scanResult.add(findByName(castName));
+        }
+        System.out.println("Finished CastRepository.findByIds size=" + scanResult.size());
+        return scanResult;
+    }
+
     public CastAndCrew findByName(String name) {
         getMapper();
+        System.out.println("Starting CastRepository.findByName name=" + name);
         if (name == null || name.isEmpty()) {
             return null;
         }

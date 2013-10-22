@@ -48,7 +48,7 @@ public class GetTVShowDataJob {
     private static final String ACCESS_KEY = "AKIAJTBPDH4NJDBK7YVQ";
     private static final String SECRET_KEY = "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";
     private static final String PATH_TO_FILE = "/home/ec2-user/";
-    //    private static final String PATH_TO_FILE = "/Users/macbookpro/Downloads/wikishow/";
+//        private static final String PATH_TO_FILE = "/Users/macbookpro/Downloads/wikishow/";
     @Autowired
     CastRepository castRepository;
     @Autowired
@@ -69,7 +69,7 @@ public class GetTVShowDataJob {
     private String bannerMirror = null;
     private String zipMirror = null;
 
-    @Scheduled(cron = "* 30 * * * *")
+//    @Scheduled(cron = "* 0 */1 * * *")
     public void getTVShowData() throws IOException {
 
         URL mirrorUrl = new URL(GET_MIRROR_URL);
@@ -110,7 +110,7 @@ public class GetTVShowDataJob {
         }
 
         List<NewTVShow> newTVShowList = newTVShowRepository.listAllNewTVShow();
-
+        System.out.println(newTVShowList.size() + " new TV Shows to be processed.");
         for (NewTVShow newTvShow : newTVShowList) {
             System.out.println("Processing " + newTvShow.getName());
             URL newShow = new URL(GET_SERIES + newTvShow.getName().replaceAll(" ", "%20"));
@@ -183,7 +183,7 @@ public class GetTVShowDataJob {
                         Document tvShow = parseXML(new FileInputStream(xml));
                         if (tvShow != null) {
                             String tvShowName = saveSeriesXML(tvShow, language);
-                            saveEpisodesXML(tvShow, language, tvShowName);
+                            saveEpisodesXML(tvShow, language, tvShowName, this.bannerMirror);
                         }
                         while (!xml.delete()) ;
                     }
@@ -191,7 +191,7 @@ public class GetTVShowDataJob {
                     if (xml.getName().equals("actors.xml")) {
                         Document actors = parseXML(new FileInputStream(xml));
                         if (actors != null) {
-                            saveActorsXML(actors, id);
+                            saveActorsXML(actors, id, this.bannerMirror);
                         }
                         while (!xml.delete()) ;
                     }
@@ -199,7 +199,7 @@ public class GetTVShowDataJob {
                     if (xml.getName().equals("banners.xml")) {
                         Document banners = parseXML(new FileInputStream(xml));
                         if (banners != null) {
-                            saveBannersXML(banners, id, null, null, null);
+                            saveBannersXML(banners, id, null, null, null, this.bannerMirror);
                         }
                         while (!xml.delete()) ;
                     }
@@ -260,7 +260,9 @@ public class GetTVShowDataJob {
             } else if (item.getNodeName().equals("Genre")) {
                 genre = item.getTextContent().split("\\|");
             } else if (item.getNodeName().equals("Runtime")) {
-                runTime = Integer.valueOf(item.getTextContent());
+                if (item.getTextContent() != null && !item.getTextContent().isEmpty()) {
+                    runTime = Integer.valueOf(item.getTextContent());
+                }
             }
         }
 
@@ -380,7 +382,7 @@ public class GetTVShowDataJob {
         return actors;
     }
 
-    public void saveBannersXML(Document bannersDocument, String seriesId, String episodeId, String seasonNumber, String path) throws IOException {
+    public String saveBannersXML(Document bannersDocument, String seriesId, String episodeId, String seasonNumber, String path, String bannerMirror) throws IOException {
         AmazonS3Client s3 = new AmazonS3Client(
                 new BasicAWSCredentials(ACCESS_KEY, SECRET_KEY));
         if (!s3.doesBucketExist("2ndscreentvshow")) {
@@ -388,14 +390,14 @@ public class GetTVShowDataJob {
         }
 
         String type = null;
-        String type2;
+        String type2 = null;
         String id = null;
         Banners banners = null;
 
         File imageFile;
         if (episodeId != null) {
             if (path == null || path.isEmpty()) {
-                return;
+                return null;
             }
             StringBuffer s3Key = new StringBuffer();
             s3Key.append(seriesId).append("/");
@@ -410,7 +412,7 @@ public class GetTVShowDataJob {
                 System.err.println("Image does not exist.");
             }
             if (s3object == null) {
-                imageFile = downloadImage(path);
+                imageFile = downloadImage(path, bannerMirror);
                 if (imageFile != null) {
                     try {
                         s3.putObject("2ndscreentvshow", s3Key.toString(), imageFile);
@@ -421,7 +423,7 @@ public class GetTVShowDataJob {
                 }
             }
 
-            return;
+            return s3Key.toString();
         }
 
         NodeList bannersNodeList = bannersDocument.getElementsByTagName("Banner");
@@ -435,7 +437,7 @@ public class GetTVShowDataJob {
                 Node item = attributes.item(j);
                 if (item.getNodeName().equals("id")) {
                     id = item.getTextContent();
-                    banners = bannersRepository.findById(id);
+                    banners = bannersRepository.findByIdAndSeriesId(seriesId, id);
                     if (banners != null) {
                         System.out.println("Found banner id = " + id);
                         download = false;
@@ -455,7 +457,8 @@ public class GetTVShowDataJob {
                 } else if (item.getNodeName().equals("BannerType2")) {
                     if (!item.getTextContent().equals("graphical") &&
                             !item.getTextContent().equals("seasonwide") &&
-                            !item.getTextContent().equals("680x1000")) {
+                            !item.getTextContent().equals("680x1000") &&
+                            !item.getTextContent().equals("season")) {
                         download = false;
                         break;
                     }
@@ -470,11 +473,7 @@ public class GetTVShowDataJob {
 
             if (download) {
 
-                banners = new Banners();
-                banners.setId(id);
-                banners.setSeriesId(seriesId);
-                bannersRepository.addBanner(banners);
-                imageFile = downloadImage(path);
+                imageFile = downloadImage(path, bannerMirror);
                 if (imageFile != null) {
                     StringBuffer s3Key = new StringBuffer();
                     s3Key.append(seriesId).append("/");
@@ -500,26 +499,38 @@ public class GetTVShowDataJob {
                     } catch (Exception e) {
                         System.err.println("Problem to upload image " + s3Key.toString());
                     }
-
+                    banners = new Banners();
+                    banners.setSeriesId(seriesId);
+                    banners.setId(id);
+                    banners.setSeriesId(seriesId);
+                    banners.setType(type.equals("season") ? type2 : type);
+                    banners.setUrl(s3Key.toString());
+                    bannersRepository.addBanner(banners);
                 }
             }
 
         }
+        return null;
     }
 
-    public File downloadImage(String path) throws IOException {
+    public File downloadImage(String path, String bannerMirror) throws IOException {
         if (path == null || path.isEmpty()) {
             return null;
         }
 
-        if (bannerMirror == null || bannerMirror.isEmpty()) {
+        if (this.bannerMirror == null || this.bannerMirror.isEmpty()) {
+            this.bannerMirror = bannerMirror;
+        }
+
+        if (this.bannerMirror == null || this.bannerMirror.isEmpty()) {
             System.err.println("*********************************************************");
             System.err.println("Sem bannerMirror. Provavelmente erro feio em algum lugar.");
             System.err.println("*********************************************************");
             return null;
         }
-        URL image = new URL(bannerMirror + "/banners/" + path);
+        URL image = new URL(this.bannerMirror + "/banners/" + path);
         URLConnection connection = image.openConnection();
+        try {
         InputStream in = connection.getInputStream();
         FileOutputStream out = new FileOutputStream(PATH_TO_FILE + path.substring(path.lastIndexOf("/")));
         byte[] buf = new byte[1024];
@@ -530,12 +541,15 @@ public class GetTVShowDataJob {
         }
         out.flush();
         out.close();
+        } catch (FileNotFoundException e) {
+            System.err.println("Image don't exist image=" + path);
+        }
 
         File imageFile = new File(PATH_TO_FILE + path.substring(path.lastIndexOf("/")));
         return imageFile;
     }
 
-    public void saveActorsXML(Document actor, String seriesId) throws IOException {
+    public void saveActorsXML(Document actor, String seriesId, String bannerMirror) throws IOException {
         NodeList actorsList = actor.getElementsByTagName("Actor");
 
         for (int i = 0; i < actorsList.getLength(); i++) {
@@ -564,14 +578,15 @@ public class GetTVShowDataJob {
             CastAndCrew actorEntity = castRepository.findByName(name);
             Role roleEntity = roleRepository.findByRoleAndName(role, name);
             File imageFile;
-
+            StringBuffer s3Key = null;
             if (imageURL != null && !imageURL.isEmpty()) {
+                s3Key = new StringBuffer();
                 AmazonS3Client s3 = new AmazonS3Client(
                         new BasicAWSCredentials(ACCESS_KEY, SECRET_KEY));
                 if (!s3.doesBucketExist("2ndscreentvshow")) {
                     s3.createBucket("2ndscreentvshow");
                 }
-                StringBuffer s3Key = new StringBuffer();
+
                 s3Key.append(seriesId).append("/cast/");
                 s3Key.append(imageURL.substring(imageURL.lastIndexOf("/") + 1));
 
@@ -584,7 +599,7 @@ public class GetTVShowDataJob {
                     System.out.println("Image does not exist.");
                 }
                 if (s3object == null) {
-                    imageFile = downloadImage(imageURL);
+                    imageFile = downloadImage(imageURL, bannerMirror);
                     if (imageFile != null) {
                         try {
                             s3.putObject("2ndscreentvshow", s3Key.toString(), imageFile);
@@ -614,18 +629,36 @@ public class GetTVShowDataJob {
             }
             actorEntity = castRepository.findByName(name);
 
-            if (roleEntity == null && actorEntity != null) {
+            if (role == null || role.isEmpty()) {
+                role = "AddicTV";
+            }
+            if (name == null || name.isEmpty()) {
+                name = "AddicTV";
+            }
+
+            if (roleEntity == null) {
                 roleEntity = new Role();
                 roleEntity.setId(id);
-                if (role == null || role.isEmpty()) {
-                    role = "AddicTV";
-                }
-                if (name == null || name.isEmpty()) {
-                    name = "AddicTV";
-                }
+
                 roleEntity.setRole(role);
                 roleEntity.setTvShowId(seriesId);
-                roleEntity.setCastName(actorEntity.getName());
+                roleEntity.setCastName(name);
+                if (s3Key != null) {
+                    roleEntity.setUrl(s3Key.toString());
+                }
+                roleRepository.addRole(roleEntity);
+            } else {
+               if (s3Key != null && (roleEntity.getUrl() == null || !roleEntity.getUrl().equals(s3Key.toString()))) {
+                   roleEntity.setUrl(s3Key.toString());
+               }
+
+                if (!role.equals(roleEntity.getRole())) {
+                    roleEntity.setRole(role);
+                }
+
+                if (!name.equals(roleEntity.getCastName())) {
+                    roleEntity.setCastName(name);
+                }
                 roleRepository.addRole(roleEntity);
             }
         }
@@ -640,7 +673,7 @@ public class GetTVShowDataJob {
         return false;
     }
 
-    private void saveEpisodesXML(Document episodes, String language, String tvShowName) throws IOException {
+    private void saveEpisodesXML(Document episodes, String language, String tvShowName, String bannerMirror) throws IOException {
         NodeList episodeNodeList = episodes.getElementsByTagName("Episode");
 
         for (int i = 0; i < episodeNodeList.getLength(); i++) {
@@ -701,9 +734,9 @@ public class GetTVShowDataJob {
             TvShow tvShowEntity = tvShowRepository.findByTVShowName(tvShowName);
             Season seasonEntity = seasonRepository.findById(seasonId);
             Episode episodeEntity = episodeRepository.findById(id);
-
-            if (filename != null && !filename.isEmpty()) {
-                saveBannersXML(null, seriesId, id, String.valueOf(seasonNumber), filename);
+            String url = null;
+            if (filename != null && !filename.isEmpty() && (episodeEntity != null && episodeEntity.getUrl() == null)) {
+                url = saveBannersXML(null, seriesId, id, String.valueOf(seasonNumber), filename, bannerMirror);
             }
 
             if (seasonEntity == null) {
@@ -736,6 +769,9 @@ public class GetTVShowDataJob {
                 episodeEntity.setDirectors(findCast(directors, "Director"));
                 episodeEntity.setGuestStars(findCast(guestStars, "Actor"));
                 episodeEntity.setWriters(findCast(writers, "Writer"));
+                if (url != null) {
+                    episodeEntity.setUrl(url);
+                }
                 if (language.equals("pt")) {
                     episodeEntity.setName_pt(name);
                     episodeEntity.setOverview_pt(overview);
@@ -805,6 +841,10 @@ public class GetTVShowDataJob {
                     if (episodeEntity.getName_en() == null || !episodeEntity.getName_en().equals(name)) {
                         episodeEntity.setName_en(name);
                     }
+                }
+
+                if (episodeEntity.getUrl() == null && url != null) {
+                    episodeEntity.setUrl(url);
                 }
                 episodeRepository.addEpisodeData(episodeEntity);
             }

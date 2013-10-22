@@ -1,7 +1,13 @@
 package com.wikishow.repository;
 
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
+import com.amazonaws.services.dynamodbv2.model.AttributeValue;
+import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
+import com.amazonaws.services.dynamodbv2.model.Condition;
 import com.wikishow.entity.Banners;
 import org.springframework.stereotype.Repository;
+
+import java.util.List;
 
 /**
  * Created with IntelliJ IDEA.
@@ -18,9 +24,30 @@ public class BannersRepository extends DefaultRepository {
         mapper.save(banners);
     }
 
-    public Banners findById(String id) {
+    public Banners findBySeriesId(String seriesId) {
         getMapper();
-        return mapper.load(Banners.class, id);
+        return mapper.load(Banners.class, seriesId);
+    }
+
+    public Banners findByIdAndSeriesId(String id, String seriesId) {
+        getMapper();
+        Banners bannersEntity = new Banners();
+        bannersEntity.setSeriesId(seriesId);
+        Condition rangeKeyCondition = new Condition();
+        rangeKeyCondition.withComparisonOperator(ComparisonOperator.EQ)
+                .withAttributeValueList(new AttributeValue().withS(id));
+        DynamoDBQueryExpression<Banners> queryExpression = new DynamoDBQueryExpression<Banners>()
+                .withHashKeyValues(bannersEntity)
+                .withRangeKeyCondition("Id", rangeKeyCondition);
+
+        List<Banners> bannersList = mapper.query(Banners.class, queryExpression);
+
+        if (bannersList == null || bannersList.isEmpty()) {
+            return null;
+        }
+
+        return bannersList.get(0);
+
     }
 
 }

@@ -1,7 +1,6 @@
 package com.wikishow.repository;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBScanExpression;
-import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
 import com.amazonaws.services.dynamodbv2.model.Condition;
 import com.wikishow.entity.NewTVShow;
@@ -38,7 +37,11 @@ public class NewTVShowRepository extends DefaultRepository {
             return null;
         }
 
+        if (scanResult.size() > 10) {
+            return scanResult.subList(0, 10);
+        }
         return scanResult;
+
     }
 
     public NewTVShow findByName(String id) {

@@ -1,8 +1,6 @@
 package com.wikishow.entity;
 
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
+import com.amazonaws.services.dynamodbv2.datamodeling.*;
 
 /**
  * Created with IntelliJ IDEA.
@@ -14,10 +12,21 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 @DynamoDBTable(tableName = "Banners")
 public class Banners {
 
-    private String id;
     private String seriesId;
+    private String id;
+    private String type;
+    private String url;
 
-    @DynamoDBHashKey(attributeName = "Id")
+    @DynamoDBHashKey(attributeName = "SeriesID")
+    public String getSeriesId() {
+        return seriesId;
+    }
+
+    public void setSeriesId(String seriesId) {
+        this.seriesId = seriesId;
+    }
+
+    @DynamoDBRangeKey(attributeName = "Id")
     public String getId() {
         return id;
     }
@@ -26,12 +35,21 @@ public class Banners {
         this.id = id;
     }
 
-    @DynamoDBAttribute(attributeName = "SeriesID")
-    public String getSeriesId() {
-        return seriesId;
+    @DynamoDBIndexRangeKey(attributeName = "Type", localSecondaryIndexName = "TypeIndex")
+    public String getType() {
+        return type;
     }
 
-    public void setSeriesId(String seriesId) {
-        this.seriesId = seriesId;
+    public void setType(String type) {
+        this.type = type;
+    }
+
+    @DynamoDBAttribute(attributeName = "URL")
+    public String getUrl() {
+        return url;
+    }
+
+    public void setUrl(String url) {
+        this.url = url;
     }
 }

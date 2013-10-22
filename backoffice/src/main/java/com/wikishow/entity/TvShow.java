@@ -38,7 +38,9 @@ public class TvShow {
     }
 
     public void setId(String id) {
-        this.id = id;
+        if (id != null && !id.isEmpty()) {
+            this.id = id;
+        }
     }
 
     @DynamoDBHashKey(attributeName = "TVShowName")
@@ -47,7 +49,9 @@ public class TvShow {
     }
 
     public void setTvShowName(String tvShowName) {
-        this.tvShowName = tvShowName;
+        if (tvShowName != null && !tvShowName.isEmpty()) {
+            this.tvShowName = tvShowName;
+        }
     }
 
     @DynamoDBAttribute(attributeName = "Network")
@@ -56,7 +60,9 @@ public class TvShow {
     }
 
     public void setNetwork(String network) {
-        this.network = network;
+        if (network != null && !network.isEmpty()) {
+            this.network = network;
+        }
     }
 
     @DynamoDBAttribute(attributeName = "FirstAired")
@@ -65,7 +71,9 @@ public class TvShow {
     }
 
     public void setFirstAired(Date firstAired) {
-        this.firstAired = firstAired;
+        if (firstAired != null && !firstAired.toString().isEmpty()) {
+            this.firstAired = firstAired;
+        }
     }
 
     @DynamoDBAttribute(attributeName = "OverviewEN")
@@ -74,7 +82,9 @@ public class TvShow {
     }
 
     public void setOverview_en(String overview_en) {
-        this.overview_en = overview_en;
+        if (overview_en != null && !overview_en.isEmpty()) {
+            this.overview_en = overview_en;
+        }
     }
 
     @DynamoDBAttribute(attributeName = "OverviewPT")
@@ -83,7 +93,9 @@ public class TvShow {
     }
 
     public void setOverview_pt(String overview_pt) {
-        this.overview_pt = overview_pt;
+        if (overview_pt != null && !overview_pt.isEmpty()) {
+            this.overview_pt = overview_pt;
+        }
     }
 
     @DynamoDBAttribute(attributeName = "Ended")
@@ -92,7 +104,9 @@ public class TvShow {
     }
 
     public void setEnded(Boolean ended) {
-        isEnded = ended;
+        if (ended != null) {
+            isEnded = ended;
+        }
     }
 
     @DynamoDBAttribute(attributeName = "Seasons")
@@ -101,7 +115,9 @@ public class TvShow {
     }
 
     public void setSeasons(Set<String> seasons) {
-        this.seasons = seasons;
+        if (seasons != null && !seasons.isEmpty()) {
+            this.seasons = seasons;
+        }
     }
 
     @DynamoDBAttribute(attributeName = "Cast")
@@ -110,7 +126,9 @@ public class TvShow {
     }
 
     public void setCast(Set<String> cast) {
-        this.cast = cast;
+        if (cast != null && !cast.isEmpty()) {
+            this.cast = cast;
+        }
     }
 
     @DynamoDBAttribute(attributeName = "AirsTime")
@@ -119,7 +137,9 @@ public class TvShow {
     }
 
     public void setAirsTime(String airsTime) {
-        this.airsTime = airsTime;
+        if (airsTime != null && !airsTime.isEmpty()) {
+            this.airsTime = airsTime;
+        }
     }
 
     @DynamoDBAttribute(attributeName = "Genre")
@@ -128,7 +148,9 @@ public class TvShow {
     }
 
     public void setGenre(Set<String> genre) {
-        this.genre = genre;
+        if (genre != null && !genre.isEmpty()) {
+            this.genre = genre;
+        }
     }
 
     @DynamoDBAttribute(attributeName = "RunTime")
@@ -137,6 +159,8 @@ public class TvShow {
     }
 
     public void setRunTime(Integer runTime) {
-        this.runTime = runTime;
+        if (runTime != null) {
+            this.runTime = runTime;
+        }
     }
 }

@@ -8,7 +8,9 @@ import com.amazonaws.services.dynamodbv2.model.Condition;
 import com.wikishow.entity.Role;
 import org.springframework.stereotype.Repository;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Created with IntelliJ IDEA.
@@ -27,6 +29,7 @@ public class RoleRepository extends DefaultRepository {
 
     public List<Role> listRoleBySeriesId(String seriesId) {
         getMapper();
+        System.out.println("Starting RoleRepository.listRoleBySeriesId seriesID=" + seriesId);
         Condition rangeKeyCondition = new Condition()
                 .withComparisonOperator(ComparisonOperator.EQ.toString())
                 .withAttributeValueList(new AttributeValue().withS(seriesId));
@@ -39,6 +42,23 @@ public class RoleRepository extends DefaultRepository {
         if (scanResult == null || scanResult.size() == 0) {
             return null;
         }
+        System.out.println("Finished RoleRepository.listRoleBySeriesId size=" + scanResult.size());
+        return scanResult;
+    }
+
+    public List<Role> findByIds(Set<String> seasonIds) {
+        getMapper();
+        List<Role> scanResult;
+        DynamoDBScanExpression scanExpression = new DynamoDBScanExpression();
+        Set<AttributeValue> attributeValueSet = new HashSet<AttributeValue>();
+        for (String seasonId : seasonIds) {
+            attributeValueSet.add(new AttributeValue().withS(seasonId));
+        }
+        scanExpression.addFilterCondition("Role", new Condition()
+                .withComparisonOperator(ComparisonOperator.IN)
+                .withAttributeValueList(attributeValueSet));
+
+        scanResult = mapper.scan(Role.class, scanExpression);
         return scanResult;
     }
 
@@ -55,6 +75,28 @@ public class RoleRepository extends DefaultRepository {
         DynamoDBScanExpression scanExpression = new DynamoDBScanExpression();
         scanExpression.addFilterCondition("TVShowID", seriesIDRangeKeyCondition);
         scanExpression.addFilterCondition("Role", roleRangeKeyCondition);
+
+        List<Role> scanResult = mapper.scan(Role.class, scanExpression);
+
+        if (scanResult == null || scanResult.size() == 0) {
+            return null;
+        }
+        return scanResult.get(0);
+    }
+
+    public Role findByActorAndSeriesId(String actor, String seriesId) {
+        getMapper();
+        Condition roleRangeKeyCondition = new Condition()
+                .withComparisonOperator(ComparisonOperator.EQ.toString())
+                .withAttributeValueList(new AttributeValue().withS(actor));
+
+        Condition seriesIDRangeKeyCondition = new Condition()
+                .withComparisonOperator(ComparisonOperator.EQ.toString())
+                .withAttributeValueList(new AttributeValue().withS(seriesId));
+
+        DynamoDBScanExpression scanExpression = new DynamoDBScanExpression();
+        scanExpression.addFilterCondition("TVShowID", seriesIDRangeKeyCondition);
+        scanExpression.addFilterCondition("CastName", roleRangeKeyCondition);
 
         List<Role> scanResult = mapper.scan(Role.class, scanExpression);
 

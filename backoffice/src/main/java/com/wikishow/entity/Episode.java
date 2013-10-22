@@ -31,6 +31,7 @@ public class Episode {
     private Set<String> directors;
     private Set<String> writers;
     private Date firstAired;
+    private String url;
 
     @DynamoDBHashKey(attributeName = "Id")
     public String getId() {
@@ -38,7 +39,9 @@ public class Episode {
     }
 
     public void setId(String id) {
-        this.id = id;
+        if (id != null && !id.isEmpty()) {
+            this.id = id;
+        }
     }
 
     @DynamoDBIndexRangeKey(attributeName = "NamePT", localSecondaryIndexName = "NamePTIndex")
@@ -47,7 +50,9 @@ public class Episode {
     }
 
     public void setName_pt(String name_pt) {
-        this.name_pt = name_pt;
+        if (name_pt != null && !name_pt.isEmpty()) {
+            this.name_pt = name_pt;
+        }
     }
 
     @DynamoDBIndexRangeKey(attributeName = "NameEN", localSecondaryIndexName = "NameENIndex")
@@ -56,7 +61,9 @@ public class Episode {
     }
 
     public void setName_en(String name_en) {
-        this.name_en = name_en;
+        if (name_en != null && !name_en.isEmpty()) {
+            this.name_en = name_en;
+        }
     }
 
     @DynamoDBAttribute(attributeName = "EpisodeNumber")
@@ -65,7 +72,9 @@ public class Episode {
     }
 
     public void setEpisodeNumber(Integer episodeNumber) {
-        this.episodeNumber = episodeNumber;
+        if (episodeNumber != null) {
+            this.episodeNumber = episodeNumber;
+        }
     }
 
     @DynamoDBAttribute(attributeName = "SeasonNumber")
@@ -74,7 +83,9 @@ public class Episode {
     }
 
     public void setSeasonNumber(Integer seasonNumber) {
-        this.seasonNumber = seasonNumber;
+        if (seasonNumber != null) {
+            this.seasonNumber = seasonNumber;
+        }
     }
 
     @DynamoDBAttribute(attributeName = "SeasonID")
@@ -83,7 +94,9 @@ public class Episode {
     }
 
     public void setSeasonID(String seasonID) {
-        this.seasonID = seasonID;
+        if (seasonID != null && !seasonID.isEmpty()) {
+            this.seasonID = seasonID;
+        }
     }
 
     @DynamoDBAttribute(attributeName = "SeriesID")
@@ -92,7 +105,9 @@ public class Episode {
     }
 
     public void setSeriesID(String seriesID) {
-        this.seriesID = seriesID;
+        if (seriesID != null && !seriesID.isEmpty()) {
+            this.seriesID = seriesID;
+        }
     }
 
     @DynamoDBAttribute(attributeName = "OverviewEN")
@@ -101,7 +116,9 @@ public class Episode {
     }
 
     public void setOverview_en(String overview_en) {
-        this.overview_en = overview_en;
+        if (overview_en != null && !overview_en.isEmpty()) {
+            this.overview_en = overview_en;
+        }
     }
 
     @DynamoDBAttribute(attributeName = "OverviewPT")
@@ -110,7 +127,9 @@ public class Episode {
     }
 
     public void setOverview_pt(String overview_pt) {
-        this.overview_pt = overview_pt;
+        if (overview_pt != null && !overview_pt.isEmpty()) {
+            this.overview_pt = overview_pt;
+        }
     }
 
     @DynamoDBAttribute(attributeName = "GuestStars")
@@ -119,7 +138,9 @@ public class Episode {
     }
 
     public void setGuestStars(Set<String> guestStars) {
-        this.guestStars = guestStars;
+        if (guestStars != null && !guestStars.isEmpty()) {
+            this.guestStars = guestStars;
+        }
     }
 
     @DynamoDBAttribute(attributeName = "Directors")
@@ -128,7 +149,9 @@ public class Episode {
     }
 
     public void setDirectors(Set<String> directors) {
-        this.directors = directors;
+        if (directors != null && !directors.isEmpty()) {
+            this.directors = directors;
+        }
     }
 
     @DynamoDBAttribute(attributeName = "Writers")
@@ -137,7 +160,9 @@ public class Episode {
     }
 
     public void setWriters(Set<String> writers) {
-        this.writers = writers;
+        if (writers != null && !writers.isEmpty()) {
+            this.writers = writers;
+        }
     }
 
     @DynamoDBAttribute(attributeName = "FirstAired")
@@ -146,6 +171,16 @@ public class Episode {
     }
 
     public void setFirstAired(Date firstAired) {
-        this.firstAired = firstAired;
+        if (firstAired != null && !firstAired.toString().isEmpty())
+            this.firstAired = firstAired;
+    }
+
+    @DynamoDBAttribute(attributeName = "URL")
+    public String getUrl() {
+        return url;
+    }
+
+    public void setUrl(String url) {
+        this.url = url;
     }
 }

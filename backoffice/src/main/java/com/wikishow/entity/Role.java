@@ -16,6 +16,7 @@ public class Role {
     private String role;
     private String castName;
     private String tvShowId;
+    private String url;
 
     @DynamoDBAttribute(attributeName = "Id")
     public String getId() {
@@ -51,5 +52,14 @@ public class Role {
 
     public void setTvShowId(String tvShowId) {
         this.tvShowId = tvShowId;
+    }
+
+    @DynamoDBAttribute(attributeName = "URL")
+    public String getUrl() {
+        return url;
+    }
+
+    public void setUrl(String url) {
+        this.url = url;
     }
 }

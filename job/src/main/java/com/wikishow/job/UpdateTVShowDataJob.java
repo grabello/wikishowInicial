@@ -20,6 +20,7 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -35,7 +36,7 @@ public class UpdateTVShowDataJob {
     public static final String GET_UPDATE_URL = "http://thetvdb.com/api/Updates.php?type=all&time=";
     public static final String TVDB_API_KEY = "57550B35915D895C";
     public static final String GET_MIRROR_URL = "http://thetvdb.com/api/" + TVDB_API_KEY + "/mirrors.xml";
-    public static final String GET_SERIES_UPDATE = "%xmlmirror%/api/" + TVDB_API_KEY + "/series/%seriesid%/%language%.xml";
+    public static final String GET_SERIES_UPDATE = "%xmlmirror%/api/" + TVDB_API_KEY + "/series/%seriesid%/all/%language%.xml";
     public static final String GET_EPISODES_UPDATE = "%xmlmirror%/api/" + TVDB_API_KEY + "/episodes/%episodesid%/%language%.xml";
     public static final String GET_BANNER_UPDATE = "%xmlmirror%/api/" + TVDB_API_KEY + "/series/%seriesid%/banners.xml";
     public static final String GET_ACTORS_UPDATE = "%xmlmirror%/api/" + TVDB_API_KEY + "/series/%seriesid%/actors.xml";
@@ -59,8 +60,10 @@ public class UpdateTVShowDataJob {
     private String bannerMirror = null;
     private String timeUpdate = null;
 
-    @Scheduled(cron = "* * */3 * * *")
+//    @Scheduled(cron = "* 30 */2 * * *")
+    @Scheduled(cron = "*/30 * * * * *")
     public void updateShow() throws IOException {
+
         URL mirrorUrl = new URL(GET_MIRROR_URL);
         URLConnection mirrorConnection = mirrorUrl.openConnection();
         Document mirror = getTVShowDataJob.parseXML(mirrorConnection.getInputStream());
@@ -135,6 +138,7 @@ public class UpdateTVShowDataJob {
                 baseUrl = GET_ACTORS_UPDATE.replace("%xmlmirror%", xmlMirror). //
                         replace("%seriesid%", seriesNode.item(i).getTextContent());
                 processActors(seriesNode.item(i).getTextContent(), baseUrl);
+                addSerie(seriesNode.item(i).getTextContent(), englishUrl);
             } else {
                 addSerie(seriesNode.item(i).getTextContent(), englishUrl);
             }
@@ -164,7 +168,7 @@ public class UpdateTVShowDataJob {
         URLConnection updateConnection = updateUrl.openConnection();
         Document banner = getTVShowDataJob.parseXML(updateConnection.getInputStream());
         if (banner != null) {
-            getTVShowDataJob.saveBannersXML(banner, id, null, null, null);
+            getTVShowDataJob.saveBannersXML(banner, id, null, null, null, bannerMirror);
         }
 
     }
@@ -177,7 +181,7 @@ public class UpdateTVShowDataJob {
         }
         Document actors = getTVShowDataJob.parseXML(updateConnection.getInputStream());
         if (actors != null) {
-            getTVShowDataJob.saveActorsXML(actors, id);
+            getTVShowDataJob.saveActorsXML(actors, id, bannerMirror);
         }
 
     }
@@ -254,8 +258,9 @@ public class UpdateTVShowDataJob {
             }
         }
 
+        String episodeUrl = null;
         if (filename != null && !filename.isEmpty()) {
-            getTVShowDataJob.saveBannersXML(null, seriesId, id, String.valueOf(seasonNumber), filename);
+            episodeUrl = getTVShowDataJob.saveBannersXML(null, seriesId, id, String.valueOf(seasonNumber), filename, bannerMirror);
         }
 
         if (season == null) {
@@ -294,6 +299,9 @@ public class UpdateTVShowDataJob {
             } else {
                 episodeEntity.setName_en(name);
                 episodeEntity.setOverview_en(overview);
+            }
+            if (episodeUrl != null) {
+                episodeEntity.setUrl(episodeUrl);
             }
             episodeRepository.addEpisodeData(episodeEntity);
             Set<String> episodeList = season.getEpisodes();
@@ -340,6 +348,10 @@ public class UpdateTVShowDataJob {
 
                 if (!getTVShowDataJob.checkList(episodeEntity.getWriters(), getTVShowDataJob.findCast(writers, "Writer"))) {
                     episodeEntity.setWriters(getTVShowDataJob.findCast(writers, "Writer"));
+                }
+
+                if (episodeEntity.getUrl() == null && episodeUrl != null) {
+                    episodeEntity.setUrl(episodeUrl);
                 }
 
                 if (language.equals("pt")) {
@@ -429,7 +441,9 @@ public class UpdateTVShowDataJob {
             } else if (item.getNodeName().equals("Genre")) {
                 genre = item.getTextContent().split("\\|");
             } else if (item.getNodeName().equals("Runtime")) {
-                runTime = Integer.valueOf(item.getTextContent());
+                if (item.getTextContent() != null && !item.getTextContent().isEmpty()) {
+                    runTime = Integer.valueOf(item.getTextContent());
+                }
             }
         }
 
@@ -470,7 +484,6 @@ public class UpdateTVShowDataJob {
         if (tvShow.getRunTime() == null || !tvShow.getRunTime().equals(runTime)) {
             tvShow.setRunTime(runTime);
         }
-
 
         tvShowRepository.addTVShowData(tvShow);
     }
