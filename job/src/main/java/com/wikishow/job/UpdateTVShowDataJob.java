@@ -20,7 +20,6 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 /**
@@ -60,13 +59,23 @@ public class UpdateTVShowDataJob {
     private String bannerMirror = null;
     private String timeUpdate = null;
 
-//    @Scheduled(cron = "* 30 */2 * * *")
-    @Scheduled(cron = "*/30 * * * * *")
-    public void updateShow() throws IOException {
+    @Scheduled(cron = "* 30 */1 * * *")
+//    @Scheduled(cron = "*/30 * * * * *")
+    public void updateShow() {
 
-        URL mirrorUrl = new URL(GET_MIRROR_URL);
-        URLConnection mirrorConnection = mirrorUrl.openConnection();
-        Document mirror = getTVShowDataJob.parseXML(mirrorConnection.getInputStream());
+        URL mirrorUrl = null;
+        Document mirror = null;
+        try {
+            mirrorUrl = new URL(GET_MIRROR_URL);
+            URLConnection mirrorConnection = mirrorUrl.openConnection();
+            mirror = getTVShowDataJob.parseXML(mirrorConnection.getInputStream());
+        } catch (MalformedURLException e) {
+            System.err.println("Failed to start update process");
+            return;
+        } catch (IOException e) {
+            System.err.println("Failed to start update process");
+            return;
+        }
         if (mirror == null) {
             return;
         }
@@ -107,10 +116,20 @@ public class UpdateTVShowDataJob {
             timeUpdate = tvdbData.getLastUpdateTime();
         }
 
-        URL updateUrl = new URL(GET_UPDATE_URL + timeUpdate);
-        URLConnection updateConnection = updateUrl.openConnection();
+        URL updateUrl = null;
+        Document update = null;
+        try {
+            updateUrl = new URL(GET_UPDATE_URL + timeUpdate);
+            URLConnection updateConnection = updateUrl.openConnection();
+            update = getTVShowDataJob.parseXML(updateConnection.getInputStream());
+        } catch (MalformedURLException e) {
+            System.err.println("Error getting update info");
+            return;
+        } catch (IOException e) {
+            System.err.println("Error getting update info");
+            return;
+        }
 
-        Document update = getTVShowDataJob.parseXML(updateConnection.getInputStream());
         if (update == null) {
             return;
         }
@@ -138,7 +157,6 @@ public class UpdateTVShowDataJob {
                 baseUrl = GET_ACTORS_UPDATE.replace("%xmlmirror%", xmlMirror). //
                         replace("%seriesid%", seriesNode.item(i).getTextContent());
                 processActors(seriesNode.item(i).getTextContent(), baseUrl);
-                addSerie(seriesNode.item(i).getTextContent(), englishUrl);
             } else {
                 addSerie(seriesNode.item(i).getTextContent(), englishUrl);
             }
@@ -160,36 +178,73 @@ public class UpdateTVShowDataJob {
         tvdbData.setMirror(xmlMirror);
         tvdbData.setLastUpdate(new Date());
         tvDBRepository.addTVDBData(tvdbData);
-        sendEmail();
+        sendEmail(seriesNode.getLength(), episodeNode.getLength());
     }
 
-    private void processBanners(String id, String url) throws IOException {
-        URL updateUrl = new URL(url);
-        URLConnection updateConnection = updateUrl.openConnection();
-        Document banner = getTVShowDataJob.parseXML(updateConnection.getInputStream());
+    private void processBanners(String id, String url) {
+        URL updateUrl = null;
+        Document banner = null;
+        try {
+            updateUrl = new URL(url);
+            URLConnection updateConnection = updateUrl.openConnection();
+            banner = getTVShowDataJob.parseXML(updateConnection.getInputStream());
+        } catch (MalformedURLException e) {
+            System.err.println("Failed to process Banner id=" + id);
+            return;
+        } catch (IOException e) {
+            System.err.println("Failed to process Banner id=" + id);
+            return;
+        }
+
         if (banner != null) {
             getTVShowDataJob.saveBannersXML(banner, id, null, null, null, bannerMirror);
         }
 
     }
 
-    private void processActors(String id, String url) throws IOException {
-        URL updateUrl = new URL(url);
-        URLConnection updateConnection = updateUrl.openConnection();
-        if (getTVShowDataJob.getBannerMirror() == null || getTVShowDataJob.getBannerMirror().isEmpty()) {
-            getTVShowDataJob.setBannerMirror(xmlMirror);
+    private void processActors(String id, String url) {
+        URL updateUrl = null;
+        Document actors = null;
+        try {
+            updateUrl = new URL(url);
+            URLConnection updateConnection = updateUrl.openConnection();
+            if (getTVShowDataJob.getBannerMirror() == null || getTVShowDataJob.getBannerMirror().isEmpty()) {
+                getTVShowDataJob.setBannerMirror(xmlMirror);
+            }
+            actors = getTVShowDataJob.parseXML(updateConnection.getInputStream());
+        } catch (MalformedURLException e) {
+            System.err.println("Failed to process actor id=" + id);
+            return;
+        } catch (IOException e) {
+            System.err.println("Failed to process actor id=" + id);
+            return;
         }
-        Document actors = getTVShowDataJob.parseXML(updateConnection.getInputStream());
+
         if (actors != null) {
             getTVShowDataJob.saveActorsXML(actors, id, bannerMirror);
         }
 
     }
 
-    private void addEpisode(String id, String url, String language) throws IOException {
-        URL updateUrl = new URL(url);
-        URLConnection updateConnection = updateUrl.openConnection();
-        Document episodeDocument = getTVShowDataJob.parseXML(updateConnection.getInputStream());
+    private void addEpisode(String id, String url, String language) {
+        URL updateUrl = null;
+        Document episodeDocument = null;
+        try {
+            updateUrl = new URL(url);
+            URLConnection updateConnection = updateUrl.openConnection();
+            episodeDocument = getTVShowDataJob.parseXML(updateConnection.getInputStream());
+        } catch (MalformedURLException e) {
+            System.err.println("Error getting episode id=" + id);
+            return;
+        } catch (IOException e) {
+            System.err.println("Error getting episode id=" + id);
+            return;
+        }
+
+        if (episodeDocument == null) {
+            return;
+        }
+
         NodeList episodeData = episodeDocument.getElementsByTagName("Episode");
         Node showData = episodeData.item(0);
         NodeList attributes = showData.getChildNodes();
@@ -280,6 +335,18 @@ public class UpdateTVShowDataJob {
             }
             tvShow.setSeasons(seasons);
             tvShowRepository.addTVShowData(tvShow);
+        } else {
+            if (tvShow.getSeasons() == null || !tvShow.getSeasons().contains(seasonId)) {
+                Set<String> seasons = tvShow.getSeasons();
+                if (seasons != null) {
+                    seasons.add(season.getId());
+                } else {
+                    seasons = new HashSet<String>();
+                    seasons.add(season.getId());
+                }
+                tvShow.setSeasons(seasons);
+                tvShowRepository.addTVShowData(tvShow);
+            }
         }
 
         if (episodeEntity == null) {
@@ -370,6 +437,25 @@ public class UpdateTVShowDataJob {
                     }
                 }
                 episodeRepository.addEpisodeData(episodeEntity);
+                if (season.getEpisodes() == null || !season.getEpisodes().contains(id)) {
+                    Set<String> episodeList = season.getEpisodes();
+                    if (episodeList != null) {
+                        episodeList.add(episodeEntity.getId());
+                        season.setEpisodes(episodeList);
+                        if (firstAired != null) {
+                            if (season.getDateFirst() == null || !season.getDateFirst().before(firstAired)) {
+                                season.setDateFirst(firstAired);
+                            } else if (season.getDateLast() == null || !season.getDateLast().after(firstAired)) {
+                                season.setDateLast(firstAired);
+                            }
+                        }
+                    } else {
+                        episodeList = new HashSet<String>();
+                        episodeList.add(episodeEntity.getId());
+                        season.setEpisodes(episodeList);
+                    }
+                    seasonRepository.addSeasonData(season);
+                }
             }
         }
 
@@ -397,16 +483,28 @@ public class UpdateTVShowDataJob {
         return season;
     }
 
-    private void processSeries(String id, String url, String language, TvShow tvShow) throws IOException {
-        URL updateUrl = new URL(url);
-        URLConnection updateConnection = updateUrl.openConnection();
-        Document tvShowDocument = getTVShowDataJob.parseXML(updateConnection.getInputStream());
+    private void processSeries(String id, String url, String language, TvShow tvShow) {
+        URL updateUrl = null;
+        Document tvShowDocument = null;
+        try {
+            updateUrl = new URL(url);
+            URLConnection updateConnection = updateUrl.openConnection();
+            tvShowDocument = getTVShowDataJob.parseXML(updateConnection.getInputStream());
+        } catch (MalformedURLException e) {
+            System.err.println("Failed fo process series id=" + id);
+            return;
+        } catch (IOException e) {
+            System.err.println("Failed fo process series id=" + id);
+            return;
+        }
+
         if (tvShowDocument == null) {
             return;
         }
         NodeList tvShowData = tvShowDocument.getElementsByTagName("Series");
         SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
         String network = null;
+        String name = null;
         Date firstAired = null;
         String overview = null;
         Boolean isEnded = null;
@@ -444,6 +542,8 @@ public class UpdateTVShowDataJob {
                 if (item.getTextContent() != null && !item.getTextContent().isEmpty()) {
                     runTime = Integer.valueOf(item.getTextContent());
                 }
+            } else if (item.getTextContent().equals("SeriesName")) {
+                name = item.getTextContent();
             }
         }
 
@@ -458,6 +558,10 @@ public class UpdateTVShowDataJob {
         if (language.equals("pt")) {
             if (tvShow.getOverview_pt() == null || !tvShow.getOverview_pt().equals(overview)) {
                 tvShow.setOverview_pt(overview);
+            }
+
+            if (tvShow.getTvShowNamePT() == null || !tvShow.getTvShowNamePT().equals(name)) {
+                tvShow.setTvShowNamePT(name);
             }
         } else {
             if (tvShow.getOverview_en() == null || !tvShow.getOverview_en().equals(overview)) {
@@ -536,14 +640,17 @@ public class UpdateTVShowDataJob {
         return null;
     }
 
-    private void addSerie(String id, String url) throws IOException {
-        URL updateUrl = new URL(url);
-        URLConnection updateConnection = updateUrl.openConnection();
-        Document update;
-
+    private void addSerie(String id, String url) {
+        URL updateUrl = null;
+        Document update = null;
         try {
+            updateUrl = new URL(url);
+            URLConnection updateConnection = updateUrl.openConnection();
             update = getTVShowDataJob.parseXML(updateConnection.getInputStream());
-        } catch (FileNotFoundException e) {
+        } catch (MalformedURLException e) {
+            System.err.println("Not possible to get file for tvshow id=" + id);
+            return;
+        } catch (IOException e) {
             System.err.println("Not possible to get file for tvshow id=" + id);
             return;
         }
@@ -572,7 +679,7 @@ public class UpdateTVShowDataJob {
 
     }
 
-    private void sendEmail() {
+    private void sendEmail(int seriesLength, int episodeLength) {
         SimpleMailMessage message = new SimpleMailMessage();
 
         message.setFrom("gnrabello@uol.com.br");
@@ -582,7 +689,9 @@ public class UpdateTVShowDataJob {
         int tvShowCount = tvShowRepository.countTVShow();
         StringBuffer msg = new StringBuffer();
         msg.append("NewTVShows = ").append(newTvShowCount).append("\n");
-        msg.append("TVShows = ").append(tvShowCount).append("\n");
+        msg.append("TVShows = ").append(tvShowCount).append("\n").append("\n").append("\n");
+        msg.append("Séries processadas = ").append(seriesLength).append("\n");
+        msg.append("Episódios processados = ").append(episodeLength).append("\n");
         message.setText(msg.toString());
         mailSender.send(message);
 

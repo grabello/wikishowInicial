@@ -1,6 +1,9 @@
 package com.wikishow.vo;
 
-import java.util.*;
+import java.util.Date;
+import java.util.List;
+import java.util.Set;
+import java.util.SortedMap;
 
 /**
  * Created with IntelliJ IDEA.
@@ -16,23 +19,23 @@ public class TVShowVO {
     private Date firstAired;
     private String overview;
     private Boolean isEnded;
-    private List<SeasonVO> seasons;
     private List<RoleVO> cast;
     private String airsTime;
     private Set<String> genre;
     //In Minutes
     private Integer runTime;
     private List<String> banners;
+    private String choosenBanner;
+    private String choosenSeries;
     private List<String> series;
-    private SortedMap<Integer, String> seasonMap;
+    private SortedMap<Integer, SeasonVO> seasonMap;
 
-    public TVShowVO(String tvShowName, String network, Date firstAired, String overview, Boolean ended, List<SeasonVO> seasons, List<RoleVO> cast, String airsTime, Set<String> genre, Integer runTime, List<String> banners, List<String> series) {
+    public TVShowVO(String tvShowName, String network, Date firstAired, String overview, Boolean ended, List<RoleVO> cast, String airsTime, Set<String> genre, Integer runTime, List<String> banners, List<String> series) {
         this.tvShowName = tvShowName;
         this.network = network;
         this.firstAired = firstAired;
         this.overview = overview;
         isEnded = ended;
-        this.seasons = seasons;
         this.cast = cast;
         this.airsTime = airsTime;
         this.genre = genre;
@@ -41,7 +44,7 @@ public class TVShowVO {
         this.series = series;
     }
 
-    public TVShowVO(String tvShowName, String network, Date firstAired, String overview, Boolean ended, List<RoleVO> cast, String airsTime, Set<String> genre, Integer runTime, List<String> banners, List<String> series, SortedMap<Integer, String> seasonMap) {
+    public TVShowVO(String tvShowName, String network, Date firstAired, String overview, Boolean ended, List<RoleVO> cast, String airsTime, Set<String> genre, Integer runTime, List<String> banners, List<String> series, SortedMap<Integer, SeasonVO> seasonMap) {
         this.tvShowName = tvShowName;
         this.network = network;
         this.firstAired = firstAired;
@@ -96,14 +99,6 @@ public class TVShowVO {
         isEnded = ended;
     }
 
-    public List<SeasonVO> getSeasons() {
-        return seasons;
-    }
-
-    public void setSeasons(List<SeasonVO> seasons) {
-        this.seasons = seasons;
-    }
-
     public List<RoleVO> getCast() {
         return cast;
     }
@@ -152,12 +147,28 @@ public class TVShowVO {
         this.series = series;
     }
 
-    public SortedMap<Integer, String> getSeasonMap() {
+    public SortedMap<Integer, SeasonVO> getSeasonMap() {
         return seasonMap;
     }
 
-    public void setSeasonMap(SortedMap<Integer, String> seasonMap) {
+    public void setSeasonMap(SortedMap<Integer, SeasonVO> seasonMap) {
         this.seasonMap = seasonMap;
+    }
+
+    public String getChoosenBanner() {
+        return choosenBanner;
+    }
+
+    public void setChoosenBanner(String choosenBanner) {
+        this.choosenBanner = choosenBanner;
+    }
+
+    public String getChoosenSeries() {
+        return choosenSeries;
+    }
+
+    public void setChoosenSeries(String choosenSeries) {
+        this.choosenSeries = choosenSeries;
     }
 
     @Override
@@ -168,7 +179,6 @@ public class TVShowVO {
                 ", firstAired=" + firstAired +
                 ", overview='" + overview + '\'' +
                 ", isEnded=" + isEnded +
-                ", seasons=" + seasons +
                 ", cast=" + cast +
                 ", airsTime='" + airsTime + '\'' +
                 ", genre=" + genre +

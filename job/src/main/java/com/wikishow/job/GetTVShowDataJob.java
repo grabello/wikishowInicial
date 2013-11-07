@@ -7,6 +7,8 @@ import com.amazonaws.services.s3.model.S3Object;
 import com.wikishow.entity.*;
 import com.wikishow.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.mail.MailSender;
+import org.springframework.mail.SimpleMailMessage;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.w3c.dom.Document;
@@ -19,6 +21,7 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import java.io.*;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.text.ParseException;
@@ -48,7 +51,7 @@ public class GetTVShowDataJob {
     private static final String ACCESS_KEY = "AKIAJTBPDH4NJDBK7YVQ";
     private static final String SECRET_KEY = "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";
     private static final String PATH_TO_FILE = "/home/ec2-user/";
-//        private static final String PATH_TO_FILE = "/Users/macbookpro/Downloads/wikishow/";
+    //    private static final String PATH_TO_FILE = "/Users/macbookpro/Downloads/wikishow/";
     @Autowired
     CastRepository castRepository;
     @Autowired
@@ -65,16 +68,29 @@ public class GetTVShowDataJob {
     RoleRepository roleRepository;
     @Autowired
     GenreRepository genreRepository;
+    @Autowired
+    private MailSender mailSender;
     private String xmlMirror = null;
     private String bannerMirror = null;
     private String zipMirror = null;
 
-//    @Scheduled(cron = "* 0 */1 * * *")
-    public void getTVShowData() throws IOException {
+    @Scheduled(cron = "* 0 */1 * * *")
+    public void getTVShowData() {
 
-        URL mirrorUrl = new URL(GET_MIRROR_URL);
-        URLConnection mirrorConnection = mirrorUrl.openConnection();
-        Document mirror = parseXML(mirrorConnection.getInputStream());
+        URL mirrorUrl = null;
+        Document mirror = null;
+        try {
+            mirrorUrl = new URL(GET_MIRROR_URL);
+            URLConnection mirrorConnection = mirrorUrl.openConnection();
+            mirror = parseXML(mirrorConnection.getInputStream());
+        } catch (MalformedURLException e) {
+            System.err.println("Error starting job GetTVShow");
+            return;
+        } catch (IOException e) {
+            System.err.println("Error starting job GetTVShow");
+            return;
+        }
+
         if (mirror == null) {
             return;
         }
@@ -110,19 +126,32 @@ public class GetTVShowDataJob {
         }
 
         List<NewTVShow> newTVShowList = newTVShowRepository.listAllNewTVShow();
+        Map<String, Integer> tvShowsProcessed = new HashMap<String, Integer>();
         System.out.println(newTVShowList.size() + " new TV Shows to be processed.");
         for (NewTVShow newTvShow : newTVShowList) {
             System.out.println("Processing " + newTvShow.getName());
-            URL newShow = new URL(GET_SERIES + newTvShow.getName().replaceAll(" ", "%20"));
-            URLConnection updateConnection = newShow.openConnection();
-            Document newShowDocument = parseXML((updateConnection.getInputStream()));
+            Document newShowDocument = null;
+            URL newShow = null;
+            try {
+                newShow = new URL(GET_SERIES + newTvShow.getName().replaceAll(" ", "%20"));
+                URLConnection updateConnection = newShow.openConnection();
+                newShowDocument = parseXML((updateConnection.getInputStream()));
+            } catch (MalformedURLException e) {
+                System.err.println("Error getting file tvShowName=" + newTvShow.getName());
+                continue;
+            } catch (IOException e) {
+                System.err.println("Error getting file tvShowName=" + newTvShow.getName());
+                continue;
+            }
+
             if (newShowDocument == null) {
-                return;
+                continue;
             }
             NodeList newShowsNodeList = newShowDocument.getElementsByTagName("Series");
 
             for (int i = 0; i < newShowsNodeList.getLength(); i++) {
                 System.out.println("Found " + newShowsNodeList.getLength() + " tvShow=" + newTvShow.getName());
+                tvShowsProcessed.put(newTvShow.getName(), newShowsNodeList.getLength());
                 Node tvShowNode = newShowsNodeList.item(i);
                 NodeList tvShowAttributes = tvShowNode.getChildNodes();
                 for (int j = 0; j < tvShowAttributes.getLength(); j++) {
@@ -143,7 +172,7 @@ public class GetTVShowDataJob {
                 newTVShowRepository.deleteNewTVShow(newTvShow);
             }
         }
-
+        sendEmail(tvShowsProcessed);
     }
 
     public Document parseXML(InputStream stream) {
@@ -155,25 +184,27 @@ public class GetTVShowDataJob {
             objDocumentBuilder = objDocumentBuilderFactory.newDocumentBuilder();
             doc = objDocumentBuilder.parse(stream);
         } catch (ParserConfigurationException e) {
-            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+            System.err.println("Error parsing xml.");
             return null;
         } catch (SAXParseException e) {
-            e.printStackTrace();
+            System.err.println("Error parsing xml.");
             return null;
         } catch (SAXException e) {
-            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+            System.err.println("Error parsing xml.");
             return null;
         } catch (IOException e) {
-            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+            System.err.println("Error parsing xml.");
             return null;
         }
 
         return doc;
     }
 
-    private void processSeries(String id, String url, String language) throws IOException {
+    private void processSeries(String id, String url, String language) {
         try {
-            downloadZipFile(id, url, language);
+            if (!downloadZipFile(id, url, language)) {
+                return;
+            }
             File folder = unzipFile(id, language);
             if (folder != null) {
                 File[] files = folder.listFiles();
@@ -267,18 +298,22 @@ public class GetTVShowDataJob {
         }
 
         tvShowEntity = tvShowRepository.findByTVShowName(tvShowName);
+        if (tvShowEntity == null && language.equals("pt")) {
+            tvShowEntity = tvShowRepository.findById(id);
+        }
 
         if (tvShowEntity == null) {
             tvShowEntity = new TvShow();
             tvShowEntity.setId(id);
-            tvShowEntity.setTvShowName(tvShowName);
             tvShowEntity.setEnded(isEnded);
             tvShowEntity.setFirstAired(firstAired);
             tvShowEntity.setNetwork(network);
             if (language.equals("pt")) {
+                tvShowEntity.setTvShowNamePT(tvShowName);
                 tvShowEntity.setOverview_pt(overview);
                 tvShowEntity.setOverview_en("Overview not set!");
             } else {
+                tvShowEntity.setTvShowName(tvShowName);
                 tvShowEntity.setOverview_en(overview);
                 tvShowEntity.setOverview_pt("Sinopse ainda não disponível!");
             }
@@ -286,8 +321,15 @@ public class GetTVShowDataJob {
             tvShowEntity.setGenre(findGenre(genre));
             tvShowEntity.setAirsTime(airsTime);
             tvShowEntity.setRunTime(runTime);
-            tvShowRepository.addTVShowData(tvShowEntity);
+            if (tvShowEntity.getTvShowName() != null) {
+                tvShowRepository.addTVShowData(tvShowEntity);
+            }
         } else {
+
+            if (tvShowEntity.getTvShowNamePT() == null || !tvShowEntity.getTvShowNamePT().equals(tvShowName)) {
+                tvShowEntity.setTvShowNamePT(tvShowName);
+            }
+
             if (tvShowEntity.getNetwork() == null || !tvShowEntity.getNetwork().equals(network)) {
                 tvShowEntity.setNetwork(network);
             }
@@ -329,7 +371,7 @@ public class GetTVShowDataJob {
             tvShowRepository.addTVShowData(tvShowEntity);
 
         }
-        return tvShowName;
+        return tvShowEntity.getTvShowName();
     }
 
     public Set<String> findGenre(String[] genres) {
@@ -382,7 +424,7 @@ public class GetTVShowDataJob {
         return actors;
     }
 
-    public String saveBannersXML(Document bannersDocument, String seriesId, String episodeId, String seasonNumber, String path, String bannerMirror) throws IOException {
+    public String saveBannersXML(Document bannersDocument, String seriesId, String episodeId, String seasonNumber, String path, String bannerMirror) {
         AmazonS3Client s3 = new AmazonS3Client(
                 new BasicAWSCredentials(ACCESS_KEY, SECRET_KEY));
         if (!s3.doesBucketExist("2ndscreentvshow")) {
@@ -513,7 +555,7 @@ public class GetTVShowDataJob {
         return null;
     }
 
-    public File downloadImage(String path, String bannerMirror) throws IOException {
+    public File downloadImage(String path, String bannerMirror) {
         if (path == null || path.isEmpty()) {
             return null;
         }
@@ -528,28 +570,31 @@ public class GetTVShowDataJob {
             System.err.println("*********************************************************");
             return null;
         }
-        URL image = new URL(this.bannerMirror + "/banners/" + path);
-        URLConnection connection = image.openConnection();
+
         try {
-        InputStream in = connection.getInputStream();
-        FileOutputStream out = new FileOutputStream(PATH_TO_FILE + path.substring(path.lastIndexOf("/")));
-        byte[] buf = new byte[1024];
-        int n = in.read(buf);
-        while (n >= 0) {
-            out.write(buf, 0, n);
-            n = in.read(buf);
-        }
-        out.flush();
-        out.close();
+            URL image = new URL(this.bannerMirror + "/banners/" + path);
+            URLConnection connection = image.openConnection();
+            InputStream in = connection.getInputStream();
+            FileOutputStream out = new FileOutputStream(PATH_TO_FILE + path.substring(path.lastIndexOf("/")));
+            byte[] buf = new byte[1024];
+            int n = in.read(buf);
+            while (n >= 0) {
+                out.write(buf, 0, n);
+                n = in.read(buf);
+            }
+            out.flush();
+            out.close();
         } catch (FileNotFoundException e) {
             System.err.println("Image don't exist image=" + path);
+        } catch (IOException e) {
+            System.err.println("Not possible to download image=" + path);
         }
 
         File imageFile = new File(PATH_TO_FILE + path.substring(path.lastIndexOf("/")));
         return imageFile;
     }
 
-    public void saveActorsXML(Document actor, String seriesId, String bannerMirror) throws IOException {
+    public void saveActorsXML(Document actor, String seriesId, String bannerMirror) {
         NodeList actorsList = actor.getElementsByTagName("Actor");
 
         for (int i = 0; i < actorsList.getLength(); i++) {
@@ -648,9 +693,9 @@ public class GetTVShowDataJob {
                 }
                 roleRepository.addRole(roleEntity);
             } else {
-               if (s3Key != null && (roleEntity.getUrl() == null || !roleEntity.getUrl().equals(s3Key.toString()))) {
-                   roleEntity.setUrl(s3Key.toString());
-               }
+                if (s3Key != null && (roleEntity.getUrl() == null || !roleEntity.getUrl().equals(s3Key.toString()))) {
+                    roleEntity.setUrl(s3Key.toString());
+                }
 
                 if (!role.equals(roleEntity.getRole())) {
                     roleEntity.setRole(role);
@@ -673,7 +718,7 @@ public class GetTVShowDataJob {
         return false;
     }
 
-    private void saveEpisodesXML(Document episodes, String language, String tvShowName, String bannerMirror) throws IOException {
+    private void saveEpisodesXML(Document episodes, String language, String tvShowName, String bannerMirror) {
         NodeList episodeNodeList = episodes.getElementsByTagName("Episode");
 
         for (int i = 0; i < episodeNodeList.getLength(); i++) {
@@ -694,6 +739,9 @@ public class GetTVShowDataJob {
 
             for (int j = 0; j < episodeAttributes.getLength(); j++) {
                 Node item = episodeAttributes.item(j);
+                if (item == null) {
+                    continue;
+                }
                 SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
 
                 if (item.getNodeName().equals("id")) {
@@ -756,6 +804,18 @@ public class GetTVShowDataJob {
                 }
                 tvShowEntity.setSeasons(seasons);
                 tvShowRepository.addTVShowData(tvShowEntity);
+            } else {
+                if (tvShowEntity.getSeasons() == null || !tvShowEntity.getSeasons().contains(seasonId)) {
+                    Set<String> seasons = tvShowEntity.getSeasons();
+                    if (seasons != null) {
+                        seasons.add(seasonEntity.getId());
+                    } else {
+                        seasons = new HashSet<String>();
+                        seasons.add(seasonEntity.getId());
+                    }
+                    tvShowEntity.setSeasons(seasons);
+                    tvShowRepository.addTVShowData(tvShowEntity);
+                }
             }
 
             if (episodeEntity == null) {
@@ -883,19 +943,33 @@ public class GetTVShowDataJob {
         return false;
     }
 
-    private void downloadZipFile(String id, String url, String language) throws IOException {
-        URL downloadUrl = new URL(url);
-        URLConnection connection = downloadUrl.openConnection();
-        InputStream in = connection.getInputStream();
-        FileOutputStream out = new FileOutputStream(PATH_TO_FILE + id + "_" + language + ".zip");
-        byte[] buf = new byte[1024];
-        int n = in.read(buf);
-        while (n >= 0) {
-            out.write(buf, 0, n);
-            n = in.read(buf);
+    private boolean downloadZipFile(String id, String url, String language) {
+        URL downloadUrl = null;
+        try {
+            downloadUrl = new URL(url);
+            URLConnection connection = downloadUrl.openConnection();
+            InputStream in = connection.getInputStream();
+            FileOutputStream out = new FileOutputStream(PATH_TO_FILE + id + "_" + language + ".zip");
+            byte[] buf = new byte[1024];
+            int n = in.read(buf);
+            while (n >= 0) {
+                out.write(buf, 0, n);
+                n = in.read(buf);
+            }
+            out.flush();
+            out.close();
+            return true;
+        } catch (MalformedURLException e) {
+            System.err.println("Error downloadind zip file id=" + id);
+            return false;
+        } catch (FileNotFoundException e) {
+            System.err.println("Error downloadind zip file id=" + id);
+            return false;
+        } catch (IOException e) {
+            System.err.println("Error downloadind zip file id=" + id);
+            return false;
         }
-        out.flush();
-        out.close();
+
     }
 
     /**
@@ -961,14 +1035,20 @@ public class GetTVShowDataJob {
         return null;
     }
 
-    private void addSerie(String id, String url) throws IOException {
-        URL updateUrl = new URL(url);
-        URLConnection updateConnection = updateUrl.openConnection();
-        Document update;
+    private void addSerie(String id, String url) {
+        Document update = null;
 
         try {
+            URL updateUrl = new URL(url);
+            URLConnection updateConnection = updateUrl.openConnection();
             update = parseXML(updateConnection.getInputStream());
         } catch (FileNotFoundException e) {
+            System.err.println("Not possible to get file for tvshow id=" + id);
+            return;
+        } catch (MalformedURLException e) {
+            System.err.println("Not possible to get file for tvshow id=" + id);
+            return;
+        } catch (IOException e) {
             System.err.println("Not possible to get file for tvshow id=" + id);
             return;
         }
@@ -1019,4 +1099,26 @@ public class GetTVShowDataJob {
     public void setZipMirror(String zipMirror) {
         this.zipMirror = zipMirror;
     }
+
+    private void sendEmail(Map<String, Integer> seriesProcessed) {
+        SimpleMailMessage message = new SimpleMailMessage();
+
+        message.setFrom("gnrabello@uol.com.br");
+        message.setTo("grabello@gmail.com");
+        message.setSubject("Séries processadas");
+        StringBuffer msg = new StringBuffer();
+        if (seriesProcessed != null && !seriesProcessed.isEmpty()) {
+            Set<String> keys = seriesProcessed.keySet();
+            for (String key : keys) {
+                msg.append("Nome da Série = ").append(key).append("\n");
+                msg.append("Processadas = ").append(seriesProcessed.get(key)).append("\n").append("\n").append("\n");
+            }
+        } else {
+            msg.append("Nada para ser processado");
+        }
+        message.setText(msg.toString());
+        mailSender.send(message);
+
+    }
+
 }

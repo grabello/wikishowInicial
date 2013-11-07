@@ -38,45 +38,23 @@ public class TVShowInfoService {
     CastRepository castRepository;
     @Autowired
     RoleRepository roleRepository;
+    @Autowired
+    BannersRepository bannerRepository;
 
     public TVShowVO getTVShow(String name, String lang) {
 
         return toTVShowVO(name, lang);
     }
 
-    public TVShowVO getSeason(Integer seasonNumber, TVShowVO tvShowVO, String seasonId, String lang) {
-        List<SeasonVO> seasonVOs = tvShowVO.getSeasons();
-        if (seasonVOs != null && !seasonVOs.isEmpty()) {
-            if (!checkSeason(seasonVOs, seasonNumber)) {
-                Season season = seasonRepository.findById(seasonId);
-                seasonVOs.add(toSeasonVO(season, lang));
-                tvShowVO.setSeasons(seasonVOs);
-            }
-        } else {
-            seasonVOs = new ArrayList<SeasonVO>();
-            Season season = seasonRepository.findById(seasonId);
-            seasonVOs.add(toSeasonVO(season, lang));
-            tvShowVO.setSeasons(seasonVOs);
-        }
+    public TVShowVO getSeason(SeasonVO seasonVO, TVShowVO tvShowVO, String seasonId, String lang) {
+
+        Season season = seasonRepository.findById(seasonId);
+        seasonVO = toCompleteSeasonVO(seasonVO, season, lang);
+        Map<Integer, SeasonVO> seasonVOMap = tvShowVO.getSeasonMap();
+        seasonVOMap.put(seasonVO.getSeasonNumber(), seasonVO);
+
         return tvShowVO;
     }
-
-//    public SeasonVO getEpisode(Integer episodeNumber, Integer seasonNumber, SeasonVO seasonVO, String episodeId, String lang) {
-//        List<EpisodeVO> episodeVOs = seasonVO.getEpisodes();
-//        if (episodeVOs != null && !episodeVOs.isEmpty()) {
-//            if (checkEpisode(episodeVOs, episodeNumber)) {
-//                Episode episode = episodeRepository.findById(episodeId);
-//                episodeVOs.add(toEpisodeVO(episode, lang));
-//                seasonVO.setEpisodes(episodeVOs);
-//            }
-//        } else {
-//            episodeVOs = new ArrayList<EpisodeVO>();
-//            Episode episode = episodeRepository.findById(episodeId);
-//            episodeVOs.add(toEpisodeVO(episode, lang));
-//            seasonVO.setEpisodes(episodeVOs);
-//        }
-//        return seasonVO;
-//    }
 
     private boolean checkEpisode(List<EpisodeVO> episodeVOs, Integer episodeNumber) {
         for (EpisodeVO episodeVO : episodeVOs) {
@@ -99,11 +77,16 @@ public class TVShowInfoService {
     public TVShowVO toTVShowVO(String name, String lang) {
         TvShow tvShow = tvShowRepository.findByTVShowName(name);
         String overview;
+        if (tvShow == null) {
+            return null;
+        }
         Set<String> seasons = tvShow.getSeasons();
         List<Season> seasonList = seasonRepository.findByIds(seasons);
-        SortedMap<Integer, String> seasonMap = new TreeMap<Integer, String>();
-        for (Season season : seasonList) {
-            seasonMap.put(season.getSeasonNumber(), season.getId());
+        SortedMap<Integer, SeasonVO> seasonMap = new TreeMap<Integer, SeasonVO>();
+        if (seasonList != null && !seasonList.isEmpty()) {
+            for (Season season : seasonList) {
+                seasonMap.put(season.getSeasonNumber(), toBasicSeasonVO(season));
+            }
         }
         if (lang.equals("pt")) {
             overview = tvShow.getOverview_pt();
@@ -113,32 +96,46 @@ public class TVShowInfoService {
         Set<String> actors = tvShow.getCast();
         List<RoleVO> roleVOs = new ArrayList<RoleVO>();
         List<Role> roleList = roleRepository.listRoleBySeriesId(tvShow.getId());
-        for (Role role : roleList) {
-            //Role role = roleRepository.findByActorAndSeriesId(actor, tvShow.getId());
-            roleVOs.add(toRoleVO(role, lang));
+        if (roleList != null && !roleList.isEmpty()) {
+            for (Role role : roleList) {
+                //Role role = roleRepository.findByActorAndSeriesId(actor, tvShow.getId());
+                roleVOs.add(toRoleVO(role, lang));
+            }
         }
-        StringBuffer s3Key = new StringBuffer();
-        s3Key.append(tvShow.getId()).append("/");
-        s3Key.append("poster").append("/");
-        List<String> banners = getImageURL(s3Key.toString());
-        s3Key = new StringBuffer();
-        s3Key.append(tvShow.getId()).append("/");
-        s3Key.append("series/");
-        List<String> series = getImageURL(s3Key.toString());
+        List<Banners> seriesBanners = bannerRepository.findBySeriesIDAndType(tvShow.getId(), "series");
+        List<String> series = null;
+        if (seriesBanners != null && !seriesBanners.isEmpty()) {
+            series = new ArrayList<String>();
+            for (Banners serieBanner : seriesBanners) {
+                series.add(serieBanner.getUrl());
+            }
+        }
+//        List<Banners> posterBanners = bannerRepository.findBySeriesIDAndType(tvShow.getId(), "poster");
+//        List<String> posters = null;
+//        if (posterBanners != null && !posterBanners.isEmpty()) {
+//            posters = new ArrayList<String>();
+//            for (Banners posterBanner : posterBanners) {
+//                posters.add(posterBanner.getUrl());
+//            }
+//        }
         System.out.println("m=getTVShow,tvShowName=" + tvShow.getTvShowName());
         //tvShowName, network, firstAired, overview, ended, List<SeasonVO> seasons, List<RoleVO> cast, airsTime, Set<String> genre, runTime, banners, series
-        TVShowVO tvShowVO = new TVShowVO(tvShow.getTvShowName(), tvShow.getNetwork(), tvShow.getFirstAired(), overview, tvShow.getEnded(), roleVOs, tvShow.getAirsTime(), tvShow.getGenre(), tvShow.getRunTime(), banners, series, seasonMap);
+        TVShowVO tvShowVO = new TVShowVO(tvShow.getTvShowName(), tvShow.getNetwork(), tvShow.getFirstAired(), overview, tvShow.getEnded(), roleVOs, tvShow.getAirsTime(), tvShow.getGenre(), tvShow.getRunTime(), null, series, seasonMap);
         return tvShowVO;
     }
 
     public List<CastAndCrewVO> toCastAndCrewVO(List<CastAndCrew> castAndCrews, String type) {
         System.out.println();
         List<CastAndCrewVO> castAndCrewVOList = new ArrayList<CastAndCrewVO>();
+        if (castAndCrews == null || castAndCrews.isEmpty()) {
+            return null;
+        }
         for (CastAndCrew castAndCrew : castAndCrews) {
             CastAndCrewVO castAndCrewVO = new CastAndCrewVO(castAndCrew.getName(), type);
             System.out.println(castAndCrewVO.toString());
             castAndCrewVOList.add(castAndCrewVO);
         }
+
         System.out.println("m=toCastAndCrewVO,castAndCrew=" + castAndCrewVOList);
         return castAndCrewVOList;
     }
@@ -150,16 +147,8 @@ public class TVShowInfoService {
         } else {
             castName = new CastAndCrewVO(role.getCastName(), MAIN_CAST_EN);
         }
-        StringBuffer s3Key = new StringBuffer();
-        s3Key.append(role.getTvShowId()).append("/cast/");
-        s3Key.append(role.getId());
-        List<String> imageURL = getImageURL(s3Key.toString());
-        String image = null;
-        if (imageURL != null && !imageURL.isEmpty()) {
-            image = imageURL.get(0);
-        }
         System.out.println("m=toRoleVO,role=" + role.getRole());
-        return new RoleVO(role.getRole(), castName, image);
+        return new RoleVO(role.getRole(), castName, role.getUrl());
     }
 
     public SeasonVO toSeasonVO(Season season, String lang) {
@@ -171,16 +160,103 @@ public class TVShowInfoService {
             EpisodeVO episodeVO = toBasicEpisodeVO(episode, lang);
             episodeSortMap.put(episode.getEpisodeNumber(), episodeVO);
         }
-        StringBuffer s3Key = new StringBuffer();
-        s3Key.append(season.getSeriesID()).append("/");
-        s3Key.append("seasons/");
-        s3Key.append(season.getSeasonNumber() + "/");
+
+        List<Banners> seasons = bannerRepository.findBySeriesIDAndType(season.getSeriesID(), "season");
+        List<String> seasonList = null;
+        String pattern = season.getSeriesID() + "/seasons/" + season.getSeasonNumber() + "/.*";
+        if (seasons != null) {
+            seasonList = new ArrayList<String>();
+            for (Banners seasonEntity : seasons) {
+                if (seasonEntity.getUrl().matches(pattern)) {
+                    seasonList.add(seasonEntity.getUrl());
+                }
+            }
+        }
+        List<Banners> seasonsWide = bannerRepository.findBySeriesIDAndType(season.getSeriesID(), "seasonwide");
+        List<String> seasonWideList = null;
+        if (seasonsWide != null) {
+            seasonWideList = new ArrayList<String>();
+            for (Banners seasonWide : seasonsWide) {
+                if (seasonWide.getUrl().matches(pattern)) {
+                    seasonWideList.add(seasonWide.getUrl());
+                }
+            }
+        }
+
         //Integer seasonNumber, Date dateFirst, Date dateLast, List<EpisodeVO> episodes, List<String> seasonURL
         System.out.println("" +
                 "" +
                 "" +
                 "=toSeasonVO,sesonNumber=" + season.getSeasonNumber());
-        return new SeasonVO(season.getSeasonNumber(), season.getDateFirst(), season.getDateLast(), getImageURL(s3Key.toString()), episodeSortMap);
+        return new SeasonVO(season.getSeasonNumber(), season.getDateFirst(), season.getDateLast(), seasonList, seasonWideList, episodeSortMap);
+    }
+
+    public SeasonVO toBasicSeasonVO(Season season) {
+
+        List<Banners> seasons = bannerRepository.findBySeriesIDAndType(season.getSeriesID(), "season");
+        List<String> seasonList = null;
+        String pattern = season.getSeriesID() + "/seasons/" + season.getSeasonNumber() + "/.*";
+        if (seasons != null && !seasons.isEmpty()) {
+            seasonList = new ArrayList<String>();
+            for (Banners seasonEntity : seasons) {
+                if (seasonEntity.getUrl().matches(pattern)) {
+                    seasonList.add(seasonEntity.getUrl());
+                }
+            }
+        }
+
+        SeasonVO seasonVO = new SeasonVO(season.getId(), season.getSeasonNumber(), seasonList, null);
+
+        if (seasonList != null && !seasonList.isEmpty()) {
+            int choose = randomNumber(seasonList.size() - 1);
+            System.out.println("Choosed=" + choose);
+            seasonVO.setChooseSeasonURL(seasonList.get(choose));
+        }
+
+        //Integer seasonNumber, Date dateFirst, Date dateLast, List<EpisodeVO> episodes, List<String> seasonURL
+        System.out.println("" +
+                "" +
+                "" +
+                "=toSeasonVO,sesonNumber=" + season.getSeasonNumber());
+        return seasonVO;
+    }
+
+    private Integer randomNumber(int max) {
+        return 0 + (int) (Math.random() * ((max - 0) + 1));
+    }
+
+    public SeasonVO toCompleteSeasonVO(SeasonVO seasonVO, Season season, String lang) {
+        Set<String> episodeIdList = season.getEpisodes();
+        SortedMap<Integer, EpisodeVO> episodeSortMap = new TreeMap<Integer, EpisodeVO>();
+        String pattern = season.getSeriesID() + "/seasons/" + season.getSeasonNumber() + "/.*";
+        if (episodeIdList != null && !episodeIdList.isEmpty()) {
+            for (String episodeId : episodeIdList) {
+                Episode episode = episodeRepository.findById(episodeId);
+                EpisodeVO episodeVO = toBasicEpisodeVO(episode, lang);
+                episodeSortMap.put(episode.getEpisodeNumber(), episodeVO);
+            }
+        }
+
+        seasonVO.setEpisodeMap(episodeSortMap);
+
+        List<Banners> seasonsWide = bannerRepository.findBySeriesIDAndType(season.getSeriesID(), "seasonwide");
+        List<String> seasonWideList = null;
+        if (seasonsWide != null && !seasonsWide.isEmpty()) {
+            seasonWideList = new ArrayList<String>();
+            for (Banners seasonWide : seasonsWide) {
+                if (seasonWide.getUrl().matches(pattern)) {
+                    seasonWideList.add(seasonWide.getUrl());
+                }
+            }
+        }
+        seasonVO.setSeasonWideURL(seasonWideList);
+
+        //Integer seasonNumber, Date dateFirst, Date dateLast, List<EpisodeVO> episodes, List<String> seasonURL
+        System.out.println("" +
+                "" +
+                "" +
+                "=toCompleteSeasonVO,sesonNumber=" + season.getSeasonNumber());
+        return seasonVO;
     }
 
     public EpisodeVO toEpisodeVO(Episode episode, String lang) {
@@ -203,14 +279,6 @@ public class TVShowInfoService {
             guestStars = toCastAndCrewVO(castRepository.findByIds(episode.getGuestStars()), GUEST_STAR_EN);
             directors = toCastAndCrewVO(castRepository.findByIds(episode.getDirectors()), DIRECTOR_EN);
             writers = toCastAndCrewVO(castRepository.findByIds(episode.getWriters()), WRITER_EN);
-        }
-        StringBuffer s3Key = new StringBuffer();
-        s3Key.append(episode.getSeriesID()).append("/");
-        s3Key.append("episodes/").append(episode.getSeasonNumber()).append("/");
-        s3Key.append(episode.getId() + ".jpg");
-        List<String> imageURL = getImageURL(s3Key.toString());
-        if (imageURL != null) {
-            episodeURL = imageURL.get(0);
         }
         System.out.println("m=toEpisodeVO,episodeName=" + episodeName);
         //name, episodeNumber, overview, List<CastAndCrewVO> guestStars, List<CastAndCrewVO> directors, List<CastAndCrewVO> writers, firstAired, episodeImage
@@ -246,54 +314,15 @@ public class TVShowInfoService {
 
     public EpisodeVO toBasicEpisodeVO(Episode episode, String lang) {
         String episodeName;
-        String episodeURL = null;
 
         if (lang.equals("pt")) {
             episodeName = episode.getName_pt();
         } else {
             episodeName = episode.getName_en();
         }
-        StringBuffer s3Key = new StringBuffer();
-        s3Key.append(episode.getSeriesID()).append("/");
-        s3Key.append("episodes/").append(episode.getSeasonNumber()).append("/");
-        s3Key.append(episode.getId() + ".jpg");
-        List<String> imageURL = getImageURL(s3Key.toString());
-        if (imageURL != null) {
-            episodeURL = imageURL.get(0);
-        }
         System.out.println("m=toEpisodeVO,episodeName=" + episodeName);
         //name, episodeNumber, overview, List<CastAndCrewVO> guestStars, List<CastAndCrewVO> directors, List<CastAndCrewVO> writers, firstAired, episodeImage
-        return new EpisodeVO(episode.getId(), episodeName, episode.getEpisodeNumber(), episode.getFirstAired(), episodeURL);
+        return new EpisodeVO(episode.getId(), episodeName, episode.getEpisodeNumber(), episode.getFirstAired(), episode.getUrl());
     }
 
-
-    public List<String> getImageURL(String key) {
-        System.out.println("Starting getImageURL key=" + key);
-//        AmazonS3Client s3 = new AmazonS3Client(
-//                new BasicAWSCredentials(ACCESS_KEY, SECRET_KEY));
-//        if (!s3.doesBucketExist("2ndscreentvshow")) {
-//            s3.createBucket("2ndscreentvshow");
-//        }
-//
-//        List<String> imagesURList = new ArrayList<String>();
-//        ListObjectsRequest listObjectsRequest = new ListObjectsRequest()
-//                .withBucketName("2ndscreentvshow")
-//                .withPrefix(key);
-//        ObjectListing objectListing;
-//        do {
-//            objectListing = s3.listObjects(listObjectsRequest);
-//            if (objectListing.getObjectSummaries().isEmpty()) {
-//                System.err.println("Image not found");
-//                return null;
-//            }
-//            for (S3ObjectSummary objectSummary :
-//                    objectListing.getObjectSummaries()) {
-//                imagesURList.add(objectSummary.getKey());
-//            }
-//            listObjectsRequest.setMarker(objectListing.getNextMarker());
-//        } while (objectListing.isTruncated());
-//        System.out.println("Finishing getImageURL size=" + imagesURList.size());
-//        return imagesURList;
-        return null;
-    }
 }

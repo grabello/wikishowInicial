@@ -37,8 +37,8 @@ public class NewTVShowRepository extends DefaultRepository {
             return null;
         }
 
-        if (scanResult.size() > 10) {
-            return scanResult.subList(0, 10);
+        if (scanResult.size() > 30) {
+            return scanResult.subList(0, 30);
         }
         return scanResult;
 

@@ -47,7 +47,26 @@ public class BannersRepository extends DefaultRepository {
         }
 
         return bannersList.get(0);
+    }
 
+    public List<Banners> findBySeriesIDAndType(String id, String type) {
+        getMapper();
+        Banners bannersEntity = new Banners();
+        bannersEntity.setSeriesId(id);
+        Condition rangeKeyCondition = new Condition();
+        rangeKeyCondition.withComparisonOperator(ComparisonOperator.EQ)
+                .withAttributeValueList(new AttributeValue().withS(type));
+        DynamoDBQueryExpression<Banners> queryExpression = new DynamoDBQueryExpression<Banners>()
+                .withHashKeyValues(bannersEntity)
+                .withRangeKeyCondition("Type", rangeKeyCondition);
+
+        List<Banners> bannersList = mapper.query(Banners.class, queryExpression);
+
+        if (bannersList == null || bannersList.isEmpty()) {
+            return null;
+        }
+
+        return bannersList;
     }
 
 }

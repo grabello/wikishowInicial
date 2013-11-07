@@ -20,6 +20,7 @@ public class TvShow {
 
     private String id;
     private String tvShowName;
+    private String tvShowNamePT;
     private String network;
     private Date firstAired;
     private String overview_en;
@@ -52,6 +53,15 @@ public class TvShow {
         if (tvShowName != null && !tvShowName.isEmpty()) {
             this.tvShowName = tvShowName;
         }
+    }
+
+    @DynamoDBAttribute(attributeName = "TVShowNamePT")
+    public String getTvShowNamePT() {
+        return tvShowNamePT;
+    }
+
+    public void setTvShowNamePT(String tvShowNamePT) {
+        this.tvShowNamePT = tvShowNamePT;
     }
 
     @DynamoDBAttribute(attributeName = "Network")

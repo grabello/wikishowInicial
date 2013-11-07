@@ -90,6 +90,15 @@ public class TVShowRepository extends DefaultRepository {
             result.addAll(scanResult);
         }
 
+        scanExpression = new DynamoDBScanExpression();
+        scanExpression.addFilterCondition("Seasons", new Condition()
+                .withComparisonOperator(ComparisonOperator.NULL));
+
+        scanResult = mapper.scan(TvShow.class, scanExpression);
+        if (scanResult != null && !scanResult.isEmpty()) {
+            result.addAll(scanResult);
+        }
+
         if (result.isEmpty()) {
             return null;
         }

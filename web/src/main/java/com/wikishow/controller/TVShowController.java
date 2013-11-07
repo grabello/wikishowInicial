@@ -39,8 +39,20 @@ public class TVShowController {
         if (tvShowVO == null) {
             tvShowVO = tvShowInfoService.getTVShow(name, "en");
         }
+
+        if (tvShowVO.getSeries() != null && !tvShowVO.getSeries().isEmpty()) {
+            int choose = randomNumber(tvShowVO.getSeries().size() - 1);
+            System.out.println("Choosed=" + choose);
+            tvShowVO.setChoosenSeries(tvShowVO.getSeries().get(choose));
+            System.out.println(tvShowVO.getChoosenSeries());
+        }
+
+        if (tvShowVO == null) {
+            return "index";
+        }
+
         session.setAttribute(name, tvShowVO);
-        req.setAttribute("json", tvShowVO.toString());
+        req.setAttribute("json", tvShowVO);
         return "loggedin";
     }
 
@@ -52,6 +64,10 @@ public class TVShowController {
         TVShowVO tvShowVO = (TVShowVO) session.getAttribute(name);
         if (tvShowVO == null) {
             tvShowVO = tvShowInfoService.getTVShow(name, "pt");
+        }
+
+        if (tvShowVO == null) {
+            return "index";
         }
         session.setAttribute(name, tvShowVO);
         req.setAttribute("json", tvShowVO.toString());
@@ -70,9 +86,13 @@ public class TVShowController {
             tvShowVO = tvShowInfoService.getTVShow(name, "en");
         }
 
-        SortedMap<Integer, String> seasonMap = tvShowVO.getSeasonMap();
-        String seasonId = seasonMap.get(season);
-        tvShowVO = tvShowInfoService.getSeason(season, tvShowVO, seasonId, "en");
+        if (tvShowVO == null) {
+            return "index";
+        }
+
+        SortedMap<Integer, SeasonVO> seasonMap = tvShowVO.getSeasonMap();
+        SeasonVO seasonVO = seasonMap.get(season);
+        tvShowVO = tvShowInfoService.getSeason(seasonVO, tvShowVO, seasonVO.getId(), "en");
         session.setAttribute(name, tvShowVO);
         req.setAttribute("json", tvShowVO.toString());
         return "loggedin";
@@ -89,9 +109,13 @@ public class TVShowController {
             tvShowVO = tvShowInfoService.getTVShow(name, "pt");
         }
 
-        SortedMap<Integer, String> seasonMap = tvShowVO.getSeasonMap();
-        String seasonId = seasonMap.get(season);
-        tvShowVO = tvShowInfoService.getSeason(season, tvShowVO, seasonId, "pt");
+        if (tvShowVO == null) {
+            return "index";
+        }
+
+        SortedMap<Integer, SeasonVO> seasonMap = tvShowVO.getSeasonMap();
+        SeasonVO seasonVO = seasonMap.get(season);
+        tvShowVO = tvShowInfoService.getSeason(seasonVO, tvShowVO, seasonVO.getId(), "pt");
         session.setAttribute(name, tvShowVO);
         req.setAttribute("json", tvShowVO.toString());
         return "loggedin";
@@ -110,14 +134,18 @@ public class TVShowController {
             tvShowVO = tvShowInfoService.getTVShow(name, "en");
         }
 
+        if (tvShowVO == null) {
+            return "index";
+        }
+
         if (season != null) {
-            SortedMap<Integer, String> seasonMap = tvShowVO.getSeasonMap();
-            String seasonId = seasonMap.get(season);
-            tvShowVO = tvShowInfoService.getSeason(season, tvShowVO, seasonId, "en");
+            SortedMap<Integer, SeasonVO> seasonMap = tvShowVO.getSeasonMap();
+            SeasonVO seasonVO = seasonMap.get(season);
+            tvShowVO = tvShowInfoService.getSeason(seasonVO, tvShowVO, seasonVO.getId(), "en");
         }
 
         if (episode != null) {
-            SeasonVO seasonVO = getSeasonVO(tvShowVO.getSeasons(), season);
+            SeasonVO seasonVO = tvShowVO.getSeasonMap().get(season);
             SortedMap<Integer, EpisodeVO> episodeMap = seasonVO.getEpisodeMap();
             episodeMap.put(episode, tvShowInfoService.completeEpisodeVO(episodeMap.get(episode), "en"));
         }
@@ -128,9 +156,9 @@ public class TVShowController {
 
     @RequestMapping(value = "/tvshow/pt/{name}/{season}/{episode}", method = RequestMethod.GET)
     public String getPTEpisode(@PathVariable(value = "name") String name, //
-                             @PathVariable(value = "season") Integer season, //
-                             @PathVariable(value = "episode") Integer episode, //
-                             HttpServletRequest req, HttpServletResponse resp) {
+                               @PathVariable(value = "season") Integer season, //
+                               @PathVariable(value = "episode") Integer episode, //
+                               HttpServletRequest req, HttpServletResponse resp) {
         name = name.replaceAll("_", " ");
         HttpSession session = req.getSession();
         TVShowVO tvShowVO = (TVShowVO) session.getAttribute(name);
@@ -138,20 +166,28 @@ public class TVShowController {
             tvShowVO = tvShowInfoService.getTVShow(name, "pt");
         }
 
+        if (tvShowVO == null) {
+            return "index";
+        }
+
         if (season != null) {
-            SortedMap<Integer, String> seasonMap = tvShowVO.getSeasonMap();
-            String seasonId = seasonMap.get(season);
-            tvShowVO = tvShowInfoService.getSeason(season, tvShowVO, seasonId, "pt");
+            SortedMap<Integer, SeasonVO> seasonMap = tvShowVO.getSeasonMap();
+            SeasonVO seasonVO = seasonMap.get(season);
+            tvShowVO = tvShowInfoService.getSeason(seasonVO, tvShowVO, seasonVO.getId(), "pt");
         }
 
         if (episode != null) {
-            SeasonVO seasonVO = getSeasonVO(tvShowVO.getSeasons(), season);
+            SeasonVO seasonVO = tvShowVO.getSeasonMap().get(season);
             SortedMap<Integer, EpisodeVO> episodeMap = seasonVO.getEpisodeMap();
             episodeMap.put(episode, tvShowInfoService.completeEpisodeVO(episodeMap.get(episode), "pt"));
         }
         session.setAttribute(name, tvShowVO);
         req.setAttribute("json", tvShowVO.toString());
         return "loggedin";
+    }
+
+    private Integer randomNumber(int max) {
+        return 0 + (int) (Math.random() * ((max - 0) + 1));
     }
 
     private SeasonVO getSeasonVO(List<SeasonVO> seasonVOs, Integer seasonNumber) {
